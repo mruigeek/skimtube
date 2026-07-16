@@ -1,3 +1,34 @@
 {
-    "processed_videos": {}
+    "processed_videos": {
+        "dTGXhtsg37o": {
+            "title": "No meetings, no Jira, no text threads... and it shipped anyway.",
+            "channel": "How I AI",
+            "processed_at": "2026-07-02T12:03:28.968828"
+        },
+        "NK0690bxQec": {
+            "title": "His software factory runs on two loops and a rocket emoji",
+            "channel": "How I AI",
+            "processed_at": "2026-07-16T12:46:33.789002"
+        },
+        "td71WnyQnYU": {
+            "title": "TCS-\u0b95\u0bcd\u0b95\u0bc1 \u0b85\u0b9f\u0bbf\u0b9a\u0bcd\u0b9a Jackpot!!",
+            "channel": "MoneyPechu",
+            "processed_at": "2026-07-16T14:57:20.176777",
+            "summary_file": "summaries/MoneyPechu_td71WnyQnYU.md",
+            "transcript_sources": {
+                "api": "TranscriptAPI (transcriptapi.com)",
+                "local": "unavailable"
+            }
+        },
+        "hqVONwy3xM4": {
+            "title": "Gold-\u0b95\u0bcd\u0b95\u0bc1 \u0ba8\u0bb2\u0bcd\u0bb2 \u0b9a\u0bc6\u0baf\u0bcd\u0ba4\u0bbf?",
+            "channel": "MoneyPechu",
+            "processed_at": "2026-07-16T14:57:36.873001",
+            "summary_file": "summaries/MoneyPechu_hqVONwy3xM4.md",
+            "transcript_sources": {
+                "api": "TranscriptAPI (transcriptapi.com)",
+                "local": "unavailable"
+            }
+        }
+    }
 }

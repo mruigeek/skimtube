@@ -1,0 +1,15 @@
+# Environment — contains API keys, never commit
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+venv/
+.venv/
+
+# Downloads (temp subtitle files)
+downloads/
+
+# macOS
+.DS_Store
