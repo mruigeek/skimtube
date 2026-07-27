@@ -29,6 +29,56 @@
                 "api": "TranscriptAPI (transcriptapi.com)",
                 "local": "unavailable"
             }
+        },
+        "BuaBI29k5qA": {
+            "title": "AI hardware comparison",
+            "channel": "How I AI",
+            "processed_at": "2026-07-17T10:09:00.827052",
+            "summary_file": "summaries/How_I_AI_BuaBI29k5qA.md",
+            "transcript_sources": {
+                "api": "TranscriptAPI (transcriptapi.com)",
+                "local": "youtube-transcript-api / yt-dlp"
+            }
+        },
+        "A8KWTzbym6Y": {
+            "title": "\u0bae\u0b95\u0bcd\u0b95\u0bb3\u0bc1\u0b95\u0bcd\u0b95\u0bc1 Safe-\u0b86\u0ba9 Investment \u0b8e\u0ba4\u0bc1?",
+            "channel": "MoneyPechu",
+            "processed_at": "2026-07-17T10:09:46.461109",
+            "summary_file": "summaries/MoneyPechu_A8KWTzbym6Y.md",
+            "transcript_sources": {
+                "api": "TranscriptAPI (transcriptapi.com)",
+                "local": "unavailable"
+            }
+        },
+        "4z7U4cGStqE": {
+            "title": "Gold is King! \u0bae\u0bb1\u0bc1\u0baa\u0b9f\u0bbf\u0baf\u0bc1\u0bae\u0bcd \u0bb5\u0bbe\u0b99\u0bcd\u0b95\u0bc1\u0bb1\u0bbe\u0b99\u0bcd\u0b95! \u0ba4\u0bbf\u0bb0\u0bc1\u0bae\u0bcd\u0baa \u0bb5\u0bbf\u0bb4\u0bc1\u0bae\u0bbe? | Gold | Wipro | Tata Motors | Infosys |",
+            "channel": "MoneyPechu",
+            "processed_at": "2026-07-17T10:10:02.512678",
+            "summary_file": "summaries/MoneyPechu_4z7U4cGStqE.md",
+            "transcript_sources": {
+                "api": "TranscriptAPI (transcriptapi.com)",
+                "local": "unavailable"
+            }
+        },
+        "XAT_wdR6EDI": {
+            "title": "Navamsa trade off with material vs spiritual",
+            "channel": "KRS Channel",
+            "processed_at": "2026-07-17T10:10:59.010127",
+            "summary_file": "summaries/KRS_Channel_XAT_wdR6EDI.md",
+            "transcript_sources": {
+                "api": "TranscriptAPI (transcriptapi.com)",
+                "local": "youtube-transcript-api / yt-dlp"
+            }
+        },
+        "7lixh-U37qU": {
+            "title": "Saturn in your Varshaphal chart (solar return)",
+            "channel": "KRS Channel",
+            "processed_at": "2026-07-24T11:07:46.687789",
+            "summary_file": "summaries/KRS_Channel_7lixh-U37qU.md",
+            "transcript_sources": {
+                "api": "TranscriptAPI (transcriptapi.com)",
+                "local": "youtube-transcript-api / yt-dlp"
+            }
         }
     }
 }

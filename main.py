@@ -20,25 +20,21 @@ load_dotenv()
 CHANNELS_FILE = 'channels.json'
 STATE_FILE = 'state.json'
 SUMMARIES_DIR = 'summaries'
-OLLAMA_API_URL = 'http://localhost:11434/api/generate'
-OLLAMA_MODEL = 'gemma4:latest'
+OLLAMA_API_URL = os.getenv('OLLAMA_API_URL', 'http://localhost:11434/api/generate')
+OLLAMA_MODEL = os.getenv('OLLAMA_MODEL', 'gemma3:4b')
 
-# TranscriptAPI (ZeroPointRepo/youtube-skills)
 TRANSCRIPTAPI_BASE = 'https://transcriptapi.com/api/v2'
 TRANSCRIPTAPI_KEY = os.getenv('TRANSCRIPTAPI_KEY', '')
 
-# Max chars sent to LLM per chunk. ~4 chars/token → 24k chars is safe for gemma3:4b
 CHUNK_SIZE = 24000
-
 os.makedirs(SUMMARIES_DIR, exist_ok=True)
 
 
 # ---------------------------------------------------------------------------
-# Utilities
+# Utilities & Cleanup
 # ---------------------------------------------------------------------------
 
 def load_json(filepath, default_content):
-    """Load a JSON file or return default_content if missing."""
     if not os.path.exists(filepath):
         return default_content
     with open(filepath, 'r', encoding='utf-8') as f:
@@ -46,21 +42,32 @@ def load_json(filepath, default_content):
 
 
 def save_json(filepath, data):
-    """Persist data to a JSON file."""
     with open(filepath, 'w', encoding='utf-8') as f:
         json.dump(data, f, indent=4)
 
 
+def cleanup_old_summaries(max_hours: int = 24):
+    """Purge files in summaries/ older than max_hours."""
+    now = datetime.datetime.now(datetime.timezone.utc)
+    cutoff = now - datetime.timedelta(hours=max_hours)
+    purged = 0
+    for f in glob.glob(os.path.join(SUMMARIES_DIR, "*.md")):
+        try:
+            mtime = datetime.datetime.fromtimestamp(os.path.getmtime(f), datetime.timezone.utc)
+            if mtime < cutoff:
+                os.remove(f)
+                purged += 1
+        except Exception:
+            pass
+    if purged > 0:
+        print(f"[*] Cleanup: Removed {purged} old summary files (>24h).")
+
+
 # ---------------------------------------------------------------------------
-# Transcript fetching — TranscriptAPI (primary, production-grade)
+# Transcript Fetching
 # ---------------------------------------------------------------------------
 
 def get_transcript_from_transcriptapi(video_id: str) -> str | None:
-    """
-    Primary method: TranscriptAPI.com (ZeroPointRepo/youtube-skills).
-    Costs 1 credit per successful call. No IP-block issues.
-    Returns plain text transcript, or None on failure.
-    """
     if not TRANSCRIPTAPI_KEY:
         print("  [!] TRANSCRIPTAPI_KEY not set — skipping TranscriptAPI source.")
         return None
@@ -79,49 +86,28 @@ def get_transcript_from_transcriptapi(video_id: str) -> str | None:
     for attempt in range(3):
         try:
             resp = requests.get(url, headers=headers, params=params, timeout=60)
-
             if resp.status_code == 200:
                 data = resp.json()
                 text = data.get("transcript", "")
                 if isinstance(text, str) and text.strip():
                     print(f"  [+] TranscriptAPI OK (lang: {data.get('language', '?')})")
                     return text.strip()
-                print("  [-] TranscriptAPI returned empty transcript.")
                 return None
 
             if resp.status_code in retryable:
                 wait = int(resp.headers.get("Retry-After", 2 ** attempt))
-                print(f"  [!] TranscriptAPI {resp.status_code} — retrying in {wait}s...")
                 time.sleep(wait)
                 continue
-
-            if resp.status_code == 402:
-                print("  [-] TranscriptAPI: no credits remaining.")
-            elif resp.status_code == 404:
-                print("  [-] TranscriptAPI: no transcript available for this video.")
-            elif resp.status_code == 401:
-                print("  [-] TranscriptAPI: invalid API key.")
-            else:
-                print(f"  [-] TranscriptAPI error {resp.status_code}: {resp.text[:200]}")
             return None
 
-        except requests.exceptions.RequestException as e:
-            print(f"  [-] TranscriptAPI request error (attempt {attempt + 1}): {e}")
+        except requests.exceptions.RequestException:
             if attempt < 2:
                 time.sleep(2 ** attempt)
 
     return None
 
 
-# ---------------------------------------------------------------------------
-# Transcript fetching — local fallbacks (original implementation)
-# ---------------------------------------------------------------------------
-
 def clean_vtt_text(vtt_content: str) -> str:
-    """
-    Parse a VTT subtitle file into clean, deduplicated plain text.
-    Auto-generated subtitles typically duplicate lines; we strip those out.
-    """
     text_lines = []
     for line in vtt_content.splitlines():
         stripped = line.strip()
@@ -146,110 +132,54 @@ def clean_vtt_text(vtt_content: str) -> str:
     return ''.join(result)
 
 
-def get_browser_cookies_flag() -> str | None:
-    """Return yt-dlp --cookies-from-browser value for the best available browser."""
-    candidates = [
-        ("/Applications/Google Chrome.app", "chrome"),
-        ("/Applications/Microsoft Edge.app", "edge"),
-        ("/Applications/Firefox.app", "firefox"),
-        ("/Applications/Safari.app", "safari"),
-    ]
-    for app_path, name in candidates:
-        if os.path.exists(app_path):
-            return name
-    return None
-
-
 def get_transcript_from_youtube_api(video_id: str) -> str | None:
-    """
-    Fallback 1: youtube-transcript-api.
-    Retries with browser cookies if YouTube blocks the IP.
-    """
+    """Fetch transcript using youtube-transcript-api, multi-language support."""
     from youtube_transcript_api import YouTubeTranscriptApi
 
     try:
-        print("  [*] Trying youtube-transcript-api (no cookies)...")
+        print("  [*] Trying youtube-transcript-api...")
         api = YouTubeTranscriptApi()
-        transcript_obj = api.fetch(video_id)
-        text = " ".join([s.text for s in transcript_obj])
-        if text.strip():
-            return text
+        
+        try:
+            tl = api.list(video_id)
+            for t in tl:
+                fetched = t.fetch()
+                text = " ".join([item.text if hasattr(item, 'text') else item.get('text', '') for item in fetched])
+                if text.strip():
+                    print(f"  [+] youtube-transcript-api OK ({t.language})")
+                    return text.strip()
+        except Exception:
+            pass
+
+        try:
+            transcript_obj = api.fetch(video_id, languages=['en', 'ta', 'hi', 'te', 'es', 'fr', 'de', 'auto'])
+            text = " ".join([item.text if hasattr(item, 'text') else item.get('text', '') for item in transcript_obj])
+            if text.strip():
+                print("  [+] youtube-transcript-api direct fetch OK")
+                return text.strip()
+        except Exception:
+            pass
+
     except Exception as e:
-        err = str(e).lower()
-        is_ip_block = any(k in err for k in ("blocked", "ip", "requestblocked", "ipblocked"))
-        if not is_ip_block:
-            print(f"  [-] youtube-transcript-api failed: {e}")
-            return None
-        print("  [!] IP blocked. Retrying with browser cookies...")
-
-    browser = get_browser_cookies_flag()
-    if not browser:
-        print("  [-] No supported browser found for cookie extraction.")
-        return None
-
-    cookie_file = None
-    try:
-        with tempfile.NamedTemporaryFile(suffix=".txt", delete=False, mode='w') as tf:
-            cookie_file = tf.name
-
-        print(f"  [*] Extracting {browser} cookies via yt-dlp...")
-        extract_cmd = [
-            sys.executable, "-m", "yt_dlp",
-            "--cookies-from-browser", browser,
-            "--cookies", cookie_file,
-            "--skip-download", "--quiet",
-            f"https://www.youtube.com/watch?v={video_id}",
-        ]
-        subprocess.run(extract_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=30)
-
-        if not os.path.exists(cookie_file) or os.path.getsize(cookie_file) == 0:
-            print("  [-] Cookie extraction produced an empty file.")
-            return None
-
-        import requests as req
-        from http.cookiejar import MozillaCookieJar
-        session = req.Session()
-        jar = MozillaCookieJar(cookie_file)
-        jar.load(ignore_discard=True, ignore_expires=True)
-        session.cookies = jar
-
-        print(f"  [*] Trying youtube-transcript-api with {browser} cookies...")
-        api = YouTubeTranscriptApi(http_client=session)
-        transcript_obj = api.fetch(video_id)
-        text = " ".join([s.text for s in transcript_obj])
-        if text.strip():
-            print(f"  [+] Got transcript via youtube-transcript-api + {browser} cookies")
-            return text
-    except Exception as e:
-        print(f"  [-] youtube-transcript-api with cookies failed: {e}")
-    finally:
-        if cookie_file and os.path.exists(cookie_file):
-            try:
-                os.remove(cookie_file)
-            except Exception:
-                pass
+        print(f"  [-] youtube-transcript-api failed: {e}")
 
     return None
 
 
 def get_transcript_from_ytdlp_subtitles(video_id: str) -> str | None:
-    """Fallback 2: download VTT subtitles via yt-dlp."""
+    """Fallback: download VTT subtitles via yt-dlp."""
     print("  [*] Trying yt-dlp subtitles...")
     video_url = f"https://www.youtube.com/watch?v={video_id}"
     os.makedirs("downloads", exist_ok=True)
-    browser = get_browser_cookies_flag()
 
     command = [
         sys.executable, "-m", "yt_dlp",
         "--write-auto-subs", "--write-subs",
-        "--sub-langs", "en.*",
+        "--sub-langs", "all,-live_chat",
         "--skip-download", "--sub-format", "vtt",
         "-o", "downloads/%(id)s.%(ext)s",
         video_url,
     ]
-    if browser:
-        command += ["--cookies-from-browser", browser]
-        print(f"  [*] Using {browser} cookies for yt-dlp")
 
     try:
         subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
@@ -275,31 +205,18 @@ def get_transcript_from_ytdlp_subtitles(video_id: str) -> str | None:
 
 
 def get_transcript_local_fallback(video_id: str) -> str | None:
-    """Run the original local fallback chain (youtube-transcript-api → yt-dlp)."""
     transcript = get_transcript_from_youtube_api(video_id)
     if transcript:
         return transcript
-    transcript = get_transcript_from_ytdlp_subtitles(video_id)
-    if transcript:
-        return transcript
-    print("  [-] No transcript available via local fallbacks.")
-    return None
+    return get_transcript_from_ytdlp_subtitles(video_id)
 
 
 # ---------------------------------------------------------------------------
-# Content-type detection
+# Prompts & LLM Generation
 # ---------------------------------------------------------------------------
 
-NEWS_KEYWORDS = [
-    'bbc', 'cnn', 'news', 'reuters', 'guardian', 'times', 'post', 'daily',
-    'breaking', 'latest news', 'report', 'press',
-]
-TECH_KEYWORDS = [
-    'ai', 'machine learning', 'tutorial', 'coding', 'programming', 'developer',
-    'software', 'llm', 'gpt', 'python', 'javascript', 'devops', 'cloud',
-    'how to', 'how i', 'build', 'deploy', 'install', 'setup', 'configure',
-    'automation', 'workflow', 'model', 'open source',
-]
+NEWS_KEYWORDS = ['bbc', 'cnn', 'news', 'reuters', 'guardian', 'times', 'post', 'daily', 'breaking', 'report', 'press']
+TECH_KEYWORDS = ['ai', 'machine learning', 'tutorial', 'coding', 'programming', 'developer', 'software', 'llm', 'gpt', 'python', 'javascript', 'devops', 'cloud', 'how to', 'build', 'deploy', 'install', 'setup', 'configure', 'automation', 'model', 'open source']
 
 
 def detect_content_type(channel_name: str, video_title: str) -> str:
@@ -313,132 +230,18 @@ def detect_content_type(channel_name: str, video_title: str) -> str:
     return 'general'
 
 
-# ---------------------------------------------------------------------------
-# Prompt engineering — youtube-digest template
-#
-# Output format follows the youtube-digest skill (wjgoarxiv/youtube-digest-skill):
-#   TL;DR → Key Takeaways → Core Assertions (with timestamps) →
-#   Topic Timeline → Notable Quotes → Summary
-#
-# The content-type-specific prompts (news / tech / general) customise the
-# *analysis lens* while keeping the shared digest structure intact.
-# ---------------------------------------------------------------------------
+def prepare_transcript_for_llm(transcript: str, max_chars: int = 24000) -> str:
+    if len(transcript) <= max_chars:
+        return transcript
+    section_size = max_chars // 3
+    start = transcript[:section_size]
+    mid_start = (len(transcript) // 2) - (section_size // 2)
+    middle = transcript[mid_start: mid_start + section_size]
+    end = transcript[-section_size:]
+    return f"{start}\n\n[... middle section ...]\n\n{middle}\n\n[... final section ...]\n\n{end}"
 
-DIGEST_RULES = """
-STRICT OUTPUT RULES — follow every rule without exception:
-- Output ONLY the structured digest below. No preamble, intro, or closing remarks.
-- Do NOT use phrases like "The video covers", "In this video", "The author explains". State facts directly.
-- Every bullet MUST contain a specific fact, name, number, tool, decision, or argument lifted directly from the transcript. Generic observations are forbidden.
-- Use plain markdown. Section headings with ##, bullets with -, quotes with >.
-- Timestamps: use the format [M:SS] or [H:MM:SS]. If the transcript has no timestamps, omit the timestamp column from the Topic Timeline and omit timestamps from Core Assertions.
-- Keep each bullet to 1–2 lines. Dense over verbose.
-"""
-
-DIGEST_TEMPLATE = """
-## TL;DR
-[1–2 sentence summary of the entire video's core message]
-
-## Key Takeaways
-- [3–7 bullets — each a complete, standalone insight with a specific fact or claim]
-
-## Core Assertions & Claims
-- [Claim] (at [timestamp if available])
-- [Flag any claims that are vague, controversial, or unsubstantiated]
-
-## Topic Timeline
-| Timestamp | Topic | Summary |
-|-----------|-------|---------|
-| [time]    | [topic] | [one-line summary] |
-
-## Notable Quotes
-> "[Exact or near-exact quote from the transcript]" — at [timestamp if available]
-
-## Summary
-[3–5 paragraph narrative covering the video's arc, arguments, and conclusions]
-"""
-
-
-def build_prompt_news(transcript: str, title: str) -> str:
-    return f"""You are an expert news analyst producing a structured digest of a news video.
-
-Video Title: {title}
-
-{DIGEST_RULES}
-
-Produce the digest using EXACTLY this structure:
-{DIGEST_TEMPLATE}
-
-Additional guidance for news content:
-- In Core Assertions: always name WHO did WHAT, WHERE, WHEN, and the stated impact
-- In Key Takeaways: lead with the most consequential fact (numbers, decisions, casualties, policy changes)
-- In Notable Quotes: prefer direct quotes from officials, spokespeople, or on-camera sources
-- In Summary: follow the journalistic inverted pyramid — most important first
-
----
-Transcript:
-{transcript}
-"""
-
-
-def build_prompt_tech(transcript: str, title: str) -> str:
-    return f"""You are a senior software engineer producing a structured digest of a technical video.
-
-Video Title: {title}
-
-{DIGEST_RULES}
-
-Produce the digest using EXACTLY this structure:
-{DIGEST_TEMPLATE}
-
-Additional guidance for technical content:
-- In TL;DR: state the problem solved, the tool/approach used, and the outcome
-- In Key Takeaways: include specific tech stack names, versions, commands, or config patterns
-- In Core Assertions: flag design decisions and any gotchas or limitations explicitly stated
-- In Topic Timeline: map each major step or demo segment with its timestamp
-- In Summary: describe the build/demo flow end-to-end so a reader can follow along
-
----
-Transcript:
-{transcript}
-"""
-
-
-def build_prompt_general(transcript: str, title: str) -> str:
-    return f"""You are a sharp analyst producing a structured digest of a video.
-
-Video Title: {title}
-
-{DIGEST_RULES}
-
-Produce the digest using EXACTLY this structure:
-{DIGEST_TEMPLATE}
-
-Additional guidance:
-- In Key Takeaways: 4–7 bullets minimum, each anchored to a specific claim or evidence from the transcript
-- In Core Assertions: identify the speaker's main argument(s) and any supporting evidence cited
-- In Notable Quotes: pick the 1–3 most quotable, memorable, or surprising lines
-- In Summary: capture the arc — setup, argument, examples, conclusion
-
----
-Transcript:
-{transcript}
-"""
-
-
-def build_prompt(transcript: str, title: str, content_type: str) -> str:
-    if content_type == 'news':
-        return build_prompt_news(transcript, title)
-    if content_type == 'tech':
-        return build_prompt_tech(transcript, title)
-    return build_prompt_general(transcript, title)
-
-
-# ---------------------------------------------------------------------------
-# Chunked summarization via Ollama
-# ---------------------------------------------------------------------------
 
 def call_ollama(prompt: str) -> str | None:
-    """Send a single prompt to Ollama and return the response text."""
     payload = {
         "model": OLLAMA_MODEL,
         "prompt": prompt,
@@ -449,94 +252,49 @@ def call_ollama(prompt: str) -> str | None:
         resp = requests.post(OLLAMA_API_URL, json=payload, timeout=300)
         resp.raise_for_status()
         return resp.json().get('response', '').strip()
-    except requests.exceptions.RequestException as e:
+    except Exception as e:
         print(f"  [-] Ollama request failed: {e}")
         return None
 
 
-def chunk_transcript(transcript: str, chunk_size: int = CHUNK_SIZE) -> list[str]:
-    """Split transcript into overlapping chunks ending at word boundaries."""
-    if len(transcript) <= chunk_size:
-        return [transcript]
-
-    overlap = 500
-    chunks = []
-    start = 0
-    while start < len(transcript):
-        end = start + chunk_size
-        if end < len(transcript):
-            boundary = transcript.rfind(' ', start, end)
-            if boundary > start:
-                end = boundary
-        chunk = transcript[start:end].strip()
-        if chunk:
-            chunks.append(chunk)
-        start = end - overlap
-
-    return chunks
-
-
-def merge_partial_summaries(partials: list[str], title: str) -> str:
-    """Merge multiple chunk digest summaries into one coherent final digest."""
-    combined = "\n\n---NEXT SECTION---\n\n".join(partials)
-    merge_prompt = f"""You are merging partial digests of a single YouTube video into one final, unified digest.
-
-Video Title: {title}
-
-The partial digests below cover different sections of the same video. Consolidate them.
-
-{DIGEST_RULES}
-
-ADDITIONAL MERGE RULES:
-- Remove duplicate points that appear in multiple sections
-- Preserve ALL unique facts, numbers, names, steps, timestamps, and details — drop nothing specific
-- Merge the Topic Timeline tables from all sections into one chronological table
-- Combine all Notable Quotes from all sections
-- The final digest must use the same structure as the partials and read as one coherent document
-
-Partial digests to merge:
-{combined}
-"""
-    result = call_ollama(merge_prompt)
-    return result or combined
-
-
 def generate_summary(transcript: str, video_title: str, channel_name: str) -> str | None:
-    """
-    Generate a structured digest from a transcript via Ollama.
-    Output format follows the youtube-digest skill template:
-    TL;DR → Key Takeaways → Core Assertions → Topic Timeline → Notable Quotes → Summary
-    Handles chunking and merging for long transcripts.
-    """
     content_type = detect_content_type(channel_name, video_title)
-    print(f"  [*] Content type: {content_type}")
-    print(f"  [*] Generating digest via Ollama ({OLLAMA_MODEL})...")
+    sampled_transcript = prepare_transcript_for_llm(transcript, max_chars=24000)
 
-    chunks = chunk_transcript(transcript)
-    print(f"  [*] Transcript split into {len(chunks)} chunk(s)")
+    if content_type == 'news':
+        guidance = "Focus on WHO, WHAT, WHERE, WHEN, WHY, and key impacts."
+    elif content_type == 'tech':
+        guidance = "Focus on TOOLS USED, STEPS, CODE CONCEPTS, ARCHITECTURE, and KEY ADVANTAGES."
+    else:
+        guidance = "Focus on CORE ARGUMENTS, CONCRETE NUMBERS/METRICS, CLAIMS, and PRACTICAL TAKEAWAYS."
 
-    if len(chunks) == 1:
-        return call_ollama(build_prompt(chunks[0], video_title, content_type))
+    prompt = f"""You are an expert content analyst producing a structured digest of a YouTube video transcript.
+If the transcript is in a non-English language, translate and write the digest entirely in clear English.
 
-    partials = []
-    for i, chunk in enumerate(chunks, 1):
-        print(f"  [*] Summarizing chunk {i}/{len(chunks)}...")
-        partial = call_ollama(build_prompt(chunk, video_title, content_type))
-        if partial:
-            partials.append(partial)
+Video Title: {video_title}
+Channel: {channel_name}
+Category: {content_type}
+Guidance: {guidance}
 
-    if not partials:
-        return None
-    if len(partials) == 1:
-        return partials[0]
+STRICT OUTPUT RULES — follow every rule without exception:
+- Output ONLY the structured markdown below. No preamble, intro, or closing remarks.
+- Do NOT use phrases like "The video covers", "In this video", "The author explains". State facts directly.
+- Every bullet MUST contain a specific fact, name, number, tool, decision, or argument lifted directly from the transcript.
 
-    print(f"  [*] Merging {len(partials)} partial summaries...")
-    return merge_partial_summaries(partials, video_title)
+## TL;DR
+[1–2 sentence summary in English of the core takeaway]
 
+## Key Takeaways
+- [3–7 rich bullets with concrete details, numbers, or claims]
 
-# ---------------------------------------------------------------------------
-# Output — dual summary save
-# ---------------------------------------------------------------------------
+## Detailed Breakdown
+[3–5 paragraph detailed breakdown of the content]
+
+Transcript:
+{sampled_transcript}
+"""
+    return call_ollama(prompt)
+
 
 def save_summary(
     video_id: str,
@@ -546,15 +304,10 @@ def save_summary(
     summary_local: str | None,
     transcript_source_label_api: str,
     transcript_source_label_local: str,
-):
-    """
-    Save both summaries in a single markdown file.
-    Each section is clearly labelled with its transcript source.
-    """
+) -> str:
     safe_channel = re.sub(r'[^\w\-]', '_', channel_name)
     filename = f"{safe_channel}_{video_id}.md"
     filepath = os.path.join(SUMMARIES_DIR, filename)
-
     generated_at = datetime.datetime.now().strftime('%d %b %Y %I:%M %p')
 
     lines = [
@@ -567,97 +320,68 @@ def save_summary(
         "",
         "---",
         "",
-    ]
-
-    # ── Version A: TranscriptAPI ──────────────────────────────────────────
-    lines += [
         "## 🔵 Version A — TranscriptAPI Digest",
-        f"> Transcript source: **{transcript_source_label_api}** · Format: youtube-digest template",
+        f"> Transcript source: **{transcript_source_label_api}**",
         "",
-    ]
-    if summary_transcriptapi:
-        lines.append(summary_transcriptapi)
-    else:
-        lines.append("*Digest not available — TranscriptAPI transcript could not be fetched.*")
-
-    lines += [
+        summary_transcriptapi or "*Not available*",
         "",
         "---",
         "",
-    ]
-
-    # ── Version B: Local fallback ─────────────────────────────────────────
-    lines += [
         "## 🟢 Version B — Local Fallback Digest",
-        f"> Transcript source: **{transcript_source_label_local}** · Format: youtube-digest template",
+        f"> Transcript source: **{transcript_source_label_local}**",
         "",
+        summary_local or "*Not available*",
+        ""
     ]
-    if summary_local:
-        lines.append(summary_local)
-    else:
-        lines.append("*Digest not available — local transcript could not be fetched.*")
-
-    lines.append("")
 
     with open(filepath, 'w', encoding='utf-8') as f:
         f.write("\n".join(lines))
-
-    print(f"  [+] Saved dual summary → {filepath}")
     return filepath
 
 
-# ---------------------------------------------------------------------------
-# Channel processing
-# ---------------------------------------------------------------------------
-
 def process_channel(channel: dict, state: dict):
-    """Monitor a single channel's RSS feed and process any new videos."""
     channel_name = channel.get('name', 'Unknown')
     channel_id = channel.get('channel_id', '')
 
-    print(f"\n[*] Checking channel: {channel_name}")
-
+    print(f"\n[*] Processing channel: {channel_name} ({channel_id})")
     feed_url = f"https://www.youtube.com/feeds/videos.xml?channel_id={channel_id}"
     feed = feedparser.parse(feed_url)
 
-    if hasattr(feed, 'status') and feed.status == 404:
-        print(f"  [-] RSS feed not found for channel ID '{channel_id}'.")
-        return
-
-    if not feed.entries:
-        print(f"  [-] No videos in RSS feed for '{channel_name}'.")
+    if not hasattr(feed, 'entries') or not feed.entries:
+        print("  [-] No entries found in feed.")
         return
 
     now = datetime.datetime.now(datetime.timezone.utc)
-    cutoff = now - datetime.timedelta(hours=24)
+    cutoff = now - datetime.timedelta(hours=24) # Strict 24h filter
 
     for entry in feed.entries:
-        video_id = entry.yt_videoid
+        video_id = getattr(entry, 'yt_videoid', '')
+        if not video_id:
+            continue
+
         title = entry.title
-
-        try:
+        published_parsed = getattr(entry, 'published_parsed', None) or getattr(entry, 'updated_parsed', None)
+        if published_parsed:
             published_dt = datetime.datetime.fromtimestamp(
-                time.mktime(entry.published_parsed), datetime.timezone.utc
+                time.mktime(published_parsed), datetime.timezone.utc
             )
-        except Exception:
+        else:
+            print(f"  [-] Skipping {title}: Could not parse publication date.")
             continue
 
+        # STRICT 24-HOUR FILTER
         if published_dt < cutoff:
-            print(f"  [-] Skipping '{title}' — published {published_dt.strftime('%Y-%m-%d %H:%M UTC')} (>24h ago)")
             continue
 
-        print(f"\n  [+] New video: {title} (ID: {video_id})")
-
-        if video_id in state['processed_videos']:
-            print(f"  [-] Already processed. Skipping.")
+        if video_id in state.get('processed_videos', {}):
+            print(f"  [-] Video {video_id} already processed. Skipping.")
             continue
 
-        # ── Fetch transcripts from both sources in parallel ───────────────
-        print("\n  ── Transcript Source A: TranscriptAPI ──")
+        print(f"\n[+] Processing 24h video: {title} ({video_id})")
+
         transcript_api = get_transcript_from_transcriptapi(video_id)
         label_api = "TranscriptAPI (transcriptapi.com)" if transcript_api else "unavailable"
 
-        print("\n  ── Transcript Source B: Local Fallback ──")
         transcript_local = get_transcript_local_fallback(video_id)
         label_local = "youtube-transcript-api / yt-dlp" if transcript_local else "unavailable"
 
@@ -665,104 +389,42 @@ def process_channel(channel: dict, state: dict):
             print(f"  [-] No transcript from either source. Skipping '{title}'.")
             continue
 
-        # ── Generate summaries ────────────────────────────────────────────
-        summary_api = None
-        if transcript_api:
-            print("\n  ── Generating Summary A (TranscriptAPI transcript) ──")
-            summary_api = generate_summary(transcript_api, title, channel_name)
-        else:
-            print("  [!] Skipping Summary A — no TranscriptAPI transcript.")
+        summary_api = generate_summary(transcript_api, title, channel_name) if transcript_api else None
+        summary_local = generate_summary(transcript_local, title, channel_name) if transcript_local else None
 
-        summary_local = None
-        if transcript_local:
-            print("\n  ── Generating Summary B (Local fallback transcript) ──")
-            summary_local = generate_summary(transcript_local, title, channel_name)
-        else:
-            print("  [!] Skipping Summary B — no local transcript.")
-
-        # ── Save both summaries ───────────────────────────────────────────
         filepath = save_summary(
             video_id, title, channel_name,
             summary_api, summary_local,
             label_api, label_local,
         )
 
-        # ── Print to console ──────────────────────────────────────────────
-        print("\n" + "=" * 70)
-        print(f"  SUMMARIES — {title}")
-        print("=" * 70)
-
-        print("\n🔵 Version A — TranscriptAPI:")
-        print(summary_api or "  (not available)")
-
-        print("\n🟢 Version B — Local Fallback:")
-        print(summary_local or "  (not available)")
-
-        print("=" * 70 + "\n")
-
-        state['processed_videos'][video_id] = {
+        state.setdefault('processed_videos', {})[video_id] = {
             "title": title,
             "channel": channel_name,
             "processed_at": datetime.datetime.now().isoformat(),
             "summary_file": filepath,
-            "transcript_sources": {
-                "api": label_api,
-                "local": label_local,
-            },
         }
 
 
-# ---------------------------------------------------------------------------
-# Startup checks
-# ---------------------------------------------------------------------------
-
 def check_ollama() -> bool:
-    """Verify Ollama is reachable and the configured model is available."""
     try:
         resp = requests.get("http://localhost:11434/api/tags", timeout=5)
         resp.raise_for_status()
-        models = [m['name'] for m in resp.json().get('models', [])]
-        if not any(OLLAMA_MODEL.split(':')[0] in m for m in models):
-            print(f"  [!] Model '{OLLAMA_MODEL}' not found. Available: {models or 'none'}")
-            print(f"  [!] Run: ollama pull {OLLAMA_MODEL}")
-            return False
-        print(f"  [+] Ollama running. Model '{OLLAMA_MODEL}' available.")
         return True
-    except requests.exceptions.ConnectionError:
+    except Exception:
         print("  [-] Cannot connect to Ollama at http://localhost:11434")
-        print("  [-] Start Ollama: open the app or run `ollama serve`")
-        return False
-    except Exception as e:
-        print(f"  [-] Ollama health check failed: {e}")
         return False
 
-
-def check_transcriptapi() -> bool:
-    """Quick sanity check that the TranscriptAPI key is configured."""
-    if not TRANSCRIPTAPI_KEY:
-        print("  [!] TRANSCRIPTAPI_KEY not set in .env — Version A summaries will be skipped.")
-        return False
-    print(f"  [+] TranscriptAPI key loaded (sk_...{TRANSCRIPTAPI_KEY[-6:]})")
-    return True
-
-
-# ---------------------------------------------------------------------------
-# Entry point
-# ---------------------------------------------------------------------------
 
 def main():
     print("=" * 70)
-    print("  YouTube Channel Summarizer — Dual Summary Mode")
+    print("  YouTube Channel Summarizer — Last 24h Strict Mode")
     print("=" * 70)
-    print()
-    print("  Version A: TranscriptAPI (transcriptapi.com) → Ollama")
-    print("  Version B: youtube-transcript-api / yt-dlp  → Ollama")
-    print()
 
-    check_transcriptapi()
+    cleanup_old_summaries(max_hours=24)
 
     if not check_ollama():
-        print("\n[!] Aborting — Ollama must be running to generate summaries.")
+        print("\n[!] Aborting — Ollama must be running.")
         return
 
     channels_data = load_json(CHANNELS_FILE, {"channels": []})
@@ -770,7 +432,7 @@ def main():
 
     channels = channels_data.get('channels', [])
     if not channels:
-        print("[-] No channels in channels.json. Add some and re-run.")
+        print("[-] No channels in channels.json.")
         return
 
     for channel in channels:
