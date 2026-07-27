@@ -35,7 +35,6 @@ class YouTubeInShortsApp extends StatelessWidget {
             primary: Color(0xFF2563EB),
             secondary: Color(0xFFFF0000),
             surface: Color(0xFF141923),
-            background: Color(0xFF0F141C),
           ),
           fontFamily: 'Roboto',
         ),

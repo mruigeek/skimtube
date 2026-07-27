@@ -28,10 +28,10 @@ class Video(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     video_id = Column(String, unique=True, index=True, nullable=False)
-    channel_id = Column(String, ForeignKey("channels.channel_id"), nullable=False)
+    channel_id = Column(String, ForeignKey("channels.channel_id"), index=True, nullable=False)
     channel_name = Column(String, nullable=False)
     title = Column(String, nullable=False)
-    published_at = Column(DateTime, nullable=False)
+    published_at = Column(DateTime, index=True, nullable=False)
     thumbnail_url = Column(String, nullable=False)
     short_summary = Column(Text, nullable=False)
     summary_file = Column(String, nullable=True)
@@ -39,8 +39,8 @@ class Video(Base):
     summary_local = Column(Text, nullable=True)
     label_api = Column(String, nullable=True)
     label_local = Column(String, nullable=True)
-    content_type = Column(String, default="general")
-    is_bookmarked = Column(Boolean, default=False)
+    content_type = Column(String, default="general", index=True)
+    is_bookmarked = Column(Boolean, default=False, index=True)
     processed_at = Column(DateTime, default=datetime.datetime.utcnow)
 
     channel_obj = relationship("Channel", back_populates="videos")

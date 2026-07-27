@@ -73,16 +73,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
               final cid = _channelIdController.text.trim();
               if (name.isNotEmpty && cid.isNotEmpty) {
                 final provider = Provider.of<AppProvider>(context, listen: false);
+                final messenger = ScaffoldMessenger.of(context);
+                final navigator = Navigator.of(ctx);
                 try {
                   await provider.addChannel(cid, name);
-                  if (mounted) Navigator.pop(ctx);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Added channel "$name" and initiated sync!')),
-                  );
+                  if (mounted) {
+                    navigator.pop();
+                    messenger.showSnackBar(
+                      SnackBar(content: Text('Added channel "$name" and initiated sync!')),
+                    );
+                  }
                 } catch (e) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
-                  );
+                  if (mounted) {
+                    messenger.showSnackBar(
+                      SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+                    );
+                  }
                 }
               }
             },
@@ -163,10 +169,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   width: double.infinity,
                   child: ElevatedButton(
                     onPressed: () async {
+                      final messenger = ScaffoldMessenger.of(context);
                       await provider.setServerUrl(_urlController.text);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Server URL updated!')),
-                      );
+                      if (mounted) {
+                        messenger.showSnackBar(
+                          const SnackBar(content: Text('Server URL updated!')),
+                        );
+                      }
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF2563EB),
