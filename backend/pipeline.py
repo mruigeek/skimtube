@@ -372,25 +372,24 @@ def process_all_channels(db: Session = None):
                 # Generate InShorts short summary (~100 words)
                 short_summary = generate_short_inshorts_summary(main_transcript, title, ch.name)
 
-                # Generate Full digests
-                summary_api = generate_full_digest(transcript_api, title, ch.name) if transcript_api else None
-                summary_local = generate_full_digest(transcript_local, title, ch.name) if transcript_local else None
+                # Generate single unified Full digest
+                full_digest = generate_full_digest(main_transcript, title, ch.name)
 
                 # Save markdown file
                 safe_channel = re.sub(r'[^\w\-]', '_', ch.name)
                 filepath = os.path.join(SUMMARIES_DIR, f"{safe_channel}_{video_id}.md")
                 thumbnail_url = f"https://img.youtube.com/vi/{video_id}/maxresdefault.jpg"
 
-                # Write dual markdown output
+                published_str = published_dt.strftime('%d %b %Y %H:%M:%S')
+
+                # Write clean markdown output with top video metadata
                 with open(filepath, 'w', encoding='utf-8') as f:
                     f.write(f"# {title}\n\n")
                     f.write(f"**Channel:** {ch.name} | **Video ID:** {video_id}\n")
+                    f.write(f"**Published At:** {published_str}\n")
                     f.write(f"**Thumbnail:** {thumbnail_url}\n\n")
                     f.write(f"## InShorts Short Summary\n{short_summary}\n\n---\n\n")
-                    f.write("## 🔵 Version A — TranscriptAPI Digest\n")
-                    f.write((summary_api or "*Not available*") + "\n\n---\n\n")
-                    f.write("## 🟢 Version B — Local Fallback Digest\n")
-                    f.write((summary_local or "*Not available*") + "\n")
+                    f.write(f"## Detailed Summary Digest\n{full_digest or '*Not available*'}\n")
 
                 # Insert video record into DB
                 video_record = Video(
@@ -402,10 +401,10 @@ def process_all_channels(db: Session = None):
                     thumbnail_url=thumbnail_url,
                     short_summary=short_summary,
                     summary_file=filepath,
-                    summary_api=summary_api,
-                    summary_local=summary_local,
-                    label_api="TranscriptAPI (transcriptapi.com)" if transcript_api else "Unavailable",
-                    label_local="youtube-transcript-api / yt-dlp" if transcript_local else "Unavailable",
+                    summary_api=full_digest,
+                    summary_local=full_digest,
+                    label_api="TranscriptAPI" if transcript_api else "Local Fallback",
+                    label_local="Local Fallback" if transcript_local else "Unavailable",
                     content_type=content_type,
                     processed_at=datetime.datetime.utcnow()
                 )

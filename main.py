@@ -300,37 +300,28 @@ def save_summary(
     video_id: str,
     title: str,
     channel_name: str,
-    summary_transcriptapi: str | None,
-    summary_local: str | None,
-    transcript_source_label_api: str,
-    transcript_source_label_local: str,
+    summary_digest: str | None,
+    transcript_label: str,
+    published_dt: datetime.datetime | None = None,
 ) -> str:
     safe_channel = re.sub(r'[^\w\-]', '_', channel_name)
     filename = f"{safe_channel}_{video_id}.md"
     filepath = os.path.join(SUMMARIES_DIR, filename)
-    generated_at = datetime.datetime.now().strftime('%d %b %Y %I:%M %p')
+    published_str = published_dt.strftime('%d %b %Y %H:%M:%S') if published_dt else "N/A"
 
     lines = [
         f"# {title}",
         "",
-        f"**Channel:** {channel_name}",
-        f"**Video ID:** {video_id}",
-        f"**Video URL:** https://www.youtube.com/watch?v={video_id}",
-        f"**Generated At:** {generated_at}",
+        f"**Channel:** {channel_name} | **Video ID:** {video_id}",
+        f"**Published At:** {published_str}",
+        f"**Thumbnail:** https://img.youtube.com/vi/{video_id}/maxresdefault.jpg",
+        f"**Source:** {transcript_label}",
         "",
         "---",
         "",
-        "## 🔵 Version A — TranscriptAPI Digest",
-        f"> Transcript source: **{transcript_source_label_api}**",
+        "## Detailed Summary Digest",
         "",
-        summary_transcriptapi or "*Not available*",
-        "",
-        "---",
-        "",
-        "## 🟢 Version B — Local Fallback Digest",
-        f"> Transcript source: **{transcript_source_label_local}**",
-        "",
-        summary_local or "*Not available*",
+        summary_digest or "*Not available*",
         ""
     ]
 
@@ -351,8 +342,9 @@ def process_channel(channel: dict, state: dict):
         print("  [-] No entries found in feed.")
         return
 
-    now = datetime.datetime.now(datetime.timezone.utc)
-    cutoff = now - datetime.timedelta(hours=24) # Strict 24h filter
+    now = datetime.timezone.utc
+    now_dt = datetime.datetime.now(now)
+    cutoff = now_dt - datetime.timedelta(hours=24) # Strict 24h filter
 
     for entry in feed.entries:
         video_id = getattr(entry, 'yt_videoid', '')
@@ -380,22 +372,20 @@ def process_channel(channel: dict, state: dict):
         print(f"\n[+] Processing 24h video: {title} ({video_id})")
 
         transcript_api = get_transcript_from_transcriptapi(video_id)
-        label_api = "TranscriptAPI (transcriptapi.com)" if transcript_api else "unavailable"
-
         transcript_local = get_transcript_local_fallback(video_id)
-        label_local = "youtube-transcript-api / yt-dlp" if transcript_local else "unavailable"
 
         if not transcript_api and not transcript_local:
             print(f"  [-] No transcript from either source. Skipping '{title}'.")
             continue
 
-        summary_api = generate_summary(transcript_api, title, channel_name) if transcript_api else None
-        summary_local = generate_summary(transcript_local, title, channel_name) if transcript_local else None
+        main_transcript = transcript_api or transcript_local
+        transcript_label = "TranscriptAPI" if transcript_api else "Local Fallback"
+
+        summary_digest = generate_summary(main_transcript, title, channel_name)
 
         filepath = save_summary(
             video_id, title, channel_name,
-            summary_api, summary_local,
-            label_api, label_local,
+            summary_digest, transcript_label, published_dt
         )
 
         state.setdefault('processed_videos', {})[video_id] = {
