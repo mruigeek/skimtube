@@ -25,7 +25,7 @@ class YouTubeInShortsApp extends StatelessWidget {
     return ChangeNotifierProvider(
       create: (_) => AppProvider(),
       child: MaterialApp(
-        title: 'YouTube InShorts',
+        title: 'SkimTube',
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
           useMaterial3: true,

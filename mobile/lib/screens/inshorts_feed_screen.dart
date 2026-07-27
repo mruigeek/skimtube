@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/app_provider.dart';
 import '../widgets/inshorts_card.dart';
-import 'settings_screen.dart';
+
 
 class InShortsFeedScreen extends StatefulWidget {
   const InShortsFeedScreen({Key? key}) : super(key: key);
@@ -13,8 +13,6 @@ class InShortsFeedScreen extends StatefulWidget {
 
 class _InShortsFeedScreenState extends State<InShortsFeedScreen> {
   final PageController _pageController = PageController();
-
-  final List<String> _categories = ['All', 'Tech', 'News', 'General'];
 
   @override
   void dispose() {
@@ -75,108 +73,12 @@ class _InShortsFeedScreenState extends State<InShortsFeedScreen> {
               },
             ),
 
-          // ── Floating Header Overlay: App Name & Settings Action ────────────
-          Positioned(
-            top: MediaQuery.of(context).padding.top + 8,
-            left: 16,
-            right: 16,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                // Logo & App Name
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFF0000),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Icon(Icons.play_arrow_rounded, color: Colors.white, size: 18),
-                    ),
-                    const SizedBox(width: 8),
-                    const Text(
-                      'YouTube InShorts',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: -0.5,
-                      ),
-                    ),
-                  ],
-                ),
 
-                // Right Actions: Bookmark Toggle & Settings
-                Row(
-                  children: [
-                    // Bookmarks Filter Toggle
-                    IconButton(
-                      icon: Icon(
-                        provider.showBookmarkedOnly ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
-                        color: provider.showBookmarkedOnly ? const Color(0xFFFF9500) : Colors.white,
-                        size: 24,
-                      ),
-                      onPressed: () => provider.toggleBookmarkedOnly(),
-                    ),
-                    // Settings Button
-                    IconButton(
-                      icon: const Icon(Icons.settings_rounded, color: Colors.white, size: 24),
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => const SettingsScreen()),
-                        );
-                      },
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-
-          // ── Category Pills Floating Filter Bar (Below Header) ─────────────
-          Positioned(
-            top: MediaQuery.of(context).padding.top + 56,
-            left: 0,
-            right: 0,
-            child: SizedBox(
-              height: 36,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                itemCount: _categories.length,
-                itemBuilder: (context, index) {
-                  final cat = _categories[index];
-                  final isSelected = provider.selectedCategory == cat;
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: ChoiceChip(
-                      label: Text(cat),
-                      selected: isSelected,
-                      selectedColor: const Color(0xFF2563EB),
-                      backgroundColor: Colors.black.withOpacity(0.6),
-                      labelStyle: TextStyle(
-                        color: isSelected ? Colors.white : Colors.white70,
-                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                        fontSize: 12,
-                      ),
-                      onSelected: (selected) {
-                        if (selected) {
-                          provider.setCategory(cat);
-                        }
-                      },
-                    ),
-                  );
-                },
-              ),
-            ),
-          ),
 
           // ── Offline Connection Banner (if backend is offline) ────────────
           if (!provider.isOnline)
             Positioned(
-              top: MediaQuery.of(context).padding.top + 98,
+              top: MediaQuery.of(context).padding.top + 56,
               left: 16,
               right: 16,
               child: Container(
