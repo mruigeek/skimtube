@@ -137,4 +137,31 @@ class ApiService {
     final uri = Uri.parse('$baseUrl/api/sync');
     await http.post(uri).timeout(const Duration(seconds: 5));
   }
+
+  Future<Map<String, dynamic>> getSchedule() async {
+    final baseUrl = await getServerUrl();
+    final uri = Uri.parse('$baseUrl/api/schedule');
+    final response = await http.get(uri).timeout(const Duration(seconds: 5));
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body) as Map<String, dynamic>;
+    }
+    throw Exception('Failed to get schedule');
+  }
+
+  Future<void> updateSchedule({required bool enabled, required int hour, required int minute}) async {
+    final baseUrl = await getServerUrl();
+    final uri = Uri.parse('$baseUrl/api/schedule');
+    final response = await http.post(
+      uri,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'enabled': enabled,
+        'hour': hour,
+        'minute': minute,
+      }),
+    ).timeout(const Duration(seconds: 5));
+    if (response.statusCode != 200) {
+      throw Exception('Failed to update schedule');
+    }
+  }
 }

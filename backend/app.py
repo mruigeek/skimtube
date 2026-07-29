@@ -1,6 +1,7 @@
 from __future__ import annotations
 import os
 import sys
+import json
 from typing import Optional
 import datetime
 from fastapi import FastAPI, Depends, HTTPException, BackgroundTasks, Query
@@ -36,12 +37,52 @@ app.add_middleware(
 # Scheduler for daily background feed processing
 scheduler = BackgroundScheduler()
 
+def load_schedule_settings():
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "schedule_settings.json")
+    if not os.path.exists(path):
+        default = {"enabled": True, "hour": 8, "minute": 0}
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(default, f)
+        return default
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            content = f.read().strip()
+            if not content:
+                raise ValueError("Empty file")
+            return json.loads(content)
+    except Exception:
+        default = {"enabled": True, "hour": 8, "minute": 0}
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(default, f)
+        return default
+
+def save_schedule_settings(settings):
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "schedule_settings.json")
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(settings, f)
+
+def update_active_scheduler_job():
+    settings = load_schedule_settings()
+    
+    # Remove existing job if it exists
+    if scheduler.get_job("daily_rss_check"):
+        scheduler.remove_job("daily_rss_check")
+        
+    if settings.get("enabled", True):
+        scheduler.add_job(
+            process_all_channels,
+            "cron",
+            hour=settings.get("hour", 8),
+            minute=settings.get("minute", 0),
+            id="daily_rss_check",
+            replace_existing=True
+        )
+
 @app.on_event("startup")
 def on_startup():
     init_db()
-    # Schedule daily check at midnight or every 6 hours
-    scheduler.add_job(process_all_channels, "interval", hours=6, id="daily_rss_check", replace_existing=True)
     scheduler.start()
+    update_active_scheduler_job()
 
 @app.on_event("shutdown")
 def on_shutdown():
@@ -87,6 +128,11 @@ class VideoDetailResponse(VideoFeedResponse):
     summary_local: Optional[str] = None
     summary_file: Optional[str] = None
 
+class ScheduleSettings(BaseModel):
+    enabled: bool
+    hour: int
+    minute: int
+
 
 # ---------------------------------------------------------------------------
 # API Endpoints
@@ -108,6 +154,17 @@ def check_health():
         "ollama_connected": ollama_status,
         "ollama_model": OLLAMA_MODEL,
     }
+
+@app.get("/api/schedule", response_model=ScheduleSettings)
+def get_schedule():
+    return load_schedule_settings()
+
+@app.post("/api/schedule", response_model=ScheduleSettings)
+def post_schedule(settings: ScheduleSettings):
+    data = settings.model_dump() if hasattr(settings, "model_dump") else settings.dict()
+    save_schedule_settings(data)
+    update_active_scheduler_job()
+    return settings
 
 
 @app.get("/api/videos", response_model=list[VideoFeedResponse])

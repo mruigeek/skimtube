@@ -1,16 +1,3 @@
 {
-  "channels": [
-    {
-      "name": "How I AI",
-      "channel_id": "UCRYY7IEbkHLH_ScJCu9eWDQ"
-    },
-    {
-      "name": "MoneyPechu",
-      "channel_id": "UC7fQFl37yAOaPaoxQm-TqSA"
-    },
-    {
-      "name": "KRS Channel",
-      "channel_id": "UCAhSM44HoLZQrjGFttqvI5A"
-    }
-  ]
+  "channels": []
 }

@@ -1,0 +1,22 @@
+Copyright (c) 2026 Mohanraj Raja. All rights reserved.
+
+Proprietary License Agreement
+
+NOTICE: ALL INFORMATION AND SOURCE CODE CONTAINED HEREIN IS, AND REMAINS THE PROPERTY OF MOHANRAJ RAJA. THE INTELLECTUAL AND TECHNICAL CONCEPTS CONTAINED HEREIN ARE PROPRIETARY TO MOHANRAJ RAJA AND MAY BE COVERED BY U.S. AND FOREIGN PATENTS, PATENTS IN PROCESS, AND ARE PROTECTED BY TRADE SECRET OR COPYRIGHT LAW.
+
+DISSEMINATION OF THIS INFORMATION OR REPRODUCTION OF THIS MATERIAL IS STRICTLY FORBIDDEN UNLESS PRIOR WRITTEN PERMISSION IS OBTAINED FROM MOHANRAJ RAJA.
+
+1. Grant of License
+No license is granted under this agreement. All rights, title, and interest in and to the Software, including any intellectual property rights (including but not limited to source code, user interfaces, branding, logo designs, data pipelines, and summarization schemas), remain solely with Mohanraj Raja. 
+
+2. Restrictions
+You may not:
+- Modify, translate, adapt, or otherwise create derivative works of the Software.
+- Decompile, reverse engineer, disassemble, or otherwise attempt to derive the source code of the Software.
+- Redistribute, sell, lease, sublicense, or rent the Software to any third party.
+- Use the SkimTube brand name, logo, or associated trademarks for any commercial or non-commercial product without express written consent.
+
+3. Idea Ownership
+All conceptual innovations regarding the "SkimTube" product workflow (including but not limited to local-first cross-platform video-to-transcript text summary snapping feeds, overlap subtitle cleaning algorithms, and LLM structured prompt pipelines) are owned exclusively by Mohanraj Raja.
+
+THIS SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED. IN NO EVENT SHALL THE COPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY.

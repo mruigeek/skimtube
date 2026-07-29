@@ -27,6 +27,11 @@ class AppProvider with ChangeNotifier {
   bool _isPlayingTts = false;
   String? _currentlySpeakingVideoId;
 
+  // Scheduler settings state
+  bool _scheduleEnabled = true;
+  int _scheduleHour = 8;
+  int _scheduleMinute = 0;
+
   List<VideoModel> get videos {
     if (_showBookmarkedOnly) {
       return _videos.where((v) => v.isBookmarked).toList();
@@ -47,12 +52,17 @@ class AppProvider with ChangeNotifier {
   bool get isPlayingTts => _isPlayingTts;
   String? get currentlySpeakingVideoId => _currentlySpeakingVideoId;
 
+  bool get scheduleEnabled => _scheduleEnabled;
+  int get scheduleHour => _scheduleHour;
+  int get scheduleMinute => _scheduleMinute;
+
   AppProvider() {
     _initTts();
     _notificationService.init();
     loadServerUrl();
     refreshFeed();
     fetchChannels();
+    fetchSchedule();
   }
 
   void _initTts() {
@@ -220,5 +230,40 @@ class AppProvider with ChangeNotifier {
 
   Future<VideoModel> fetchFullVideoDetail(String videoId) async {
     return await _apiService.getVideoDetail(videoId);
+  }
+
+  Future<void> fetchSchedule() async {
+    try {
+      final data = await _apiService.getSchedule();
+      _scheduleEnabled = data['enabled'] == true;
+      
+      final rawHour = data['hour'];
+      if (rawHour != null) {
+        _scheduleHour = (rawHour as num).toInt();
+      } else {
+        _scheduleHour = 8;
+      }
+      
+      final rawMinute = data['minute'];
+      if (rawMinute != null) {
+        _scheduleMinute = (rawMinute as num).toInt();
+      } else {
+        _scheduleMinute = 0;
+      }
+      
+      notifyListeners();
+    } catch (_) {}
+  }
+
+  Future<void> updateSchedule(bool enabled, int hour, int minute) async {
+    try {
+      await _apiService.updateSchedule(enabled: enabled, hour: hour, minute: minute);
+      _scheduleEnabled = enabled;
+      _scheduleHour = hour;
+      _scheduleMinute = minute;
+      notifyListeners();
+    } catch (_) {
+      rethrow;
+    }
   }
 }
