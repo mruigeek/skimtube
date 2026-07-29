@@ -61,7 +61,7 @@ class InShortsCard extends StatelessWidget {
                     child: Container(
                       color: const Color(0xFF0F141C),
                       child: CachedNetworkImage(
-                        imageUrl: 'https://i.ytimg.com/vi/${video.videoId}/maxresdefault.jpg',
+                        imageUrl: 'https://img.youtube.com/vi/${video.videoId}/mqdefault.jpg',
                         fit: BoxFit.cover,
                         alignment: Alignment.center,
                         placeholder: (context, url) => Container(
@@ -70,14 +70,9 @@ class InShortsCard extends StatelessWidget {
                             child: CircularProgressIndicator(color: Color(0xFFFF3B30)),
                           ),
                         ),
-                        errorWidget: (context, url, error) => CachedNetworkImage(
-                          imageUrl: 'https://i.ytimg.com/vi/${video.videoId}/mqdefault.jpg',
-                          fit: BoxFit.cover,
-                          alignment: Alignment.center,
-                          errorWidget: (c, u, e) => Container(
-                            color: const Color(0xFF0F141C),
-                            child: const Icon(Icons.play_circle_outline, size: 64, color: Colors.white54),
-                          ),
+                        errorWidget: (context, url, error) => Container(
+                          color: const Color(0xFF0F141C),
+                          child: const Icon(Icons.play_circle_outline, size: 64, color: Colors.white54),
                         ),
                       ),
                     ),
@@ -87,35 +82,35 @@ class InShortsCard extends StatelessWidget {
                   Expanded(
                     child: Container(
                       color: Colors.white,
-                      padding: const EdgeInsets.fromLTRB(18, 16, 18, 56),
+                      padding: const EdgeInsets.fromLTRB(18, 20, 18, 56),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // Channel Tag (Red logo icon + Channel Name)
+                          // Channel Name & Tag
                           Row(
                             children: [
                               Container(
-                                width: 18,
-                                height: 18,
+                                width: 14,
+                                height: 14,
                                 decoration: BoxDecoration(
                                   color: const Color(0xFFFF0000),
-                                  borderRadius: BorderRadius.circular(4),
+                                  borderRadius: BorderRadius.circular(3),
                                 ),
-                                child: const Icon(Icons.play_arrow_rounded, size: 14, color: Colors.white),
+                                child: const Icon(Icons.play_arrow_rounded, size: 10, color: Colors.white),
                               ),
-                              const SizedBox(width: 8),
+                              const SizedBox(width: 6),
                               Text(
-                                video.channelName,
+                                video.channelName.toUpperCase(),
                                 style: const TextStyle(
                                   color: Color(0xFFE11D48),
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.bold,
-                                  letterSpacing: -0.2,
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: 0.2,
                                 ),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 10),
+                          const SizedBox(height: 8),
 
                           // Title Headline (Bold Dark Text)
                           Text(
@@ -154,59 +149,52 @@ class InShortsCard extends StatelessWidget {
                 ],
               ),
 
-              // ── Floating Action Capsule Pill (Overlapping Image Bottom-Right) ───
+              // ── Top-Right Action Tab (Bookmark & Share) ──────
               Positioned(
-                top: thumbnailHeight - 22,
-                right: 16,
+                top: thumbnailHeight - 29,
+                right: 0,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
+                  height: 29,
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  decoration: const BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(24),
-                    boxShadow: const [
-                      BoxShadow(
-                        color: Colors.black26,
-                        blurRadius: 10,
-                        offset: Offset(0, 4),
-                      ),
-                    ],
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(12),
+                      topRight: Radius.circular(12),
+                    ),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // TTS Audio Button
+                      // TTS Volume Action
                       IconButton(
-                        constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
-                        padding: EdgeInsets.zero,
-                        tooltip: 'Listen to summary',
-                        onPressed: () => provider.speakShortSummary(video),
+                        constraints: const BoxConstraints(),
+                        padding: const EdgeInsets.symmetric(horizontal: 6),
+                        iconSize: 18,
                         icon: Icon(
                           isSpeaking ? Icons.volume_up_rounded : Icons.volume_mute_rounded,
                           color: isSpeaking ? const Color(0xFF2563EB) : const Color(0xFF4B5563),
-                          size: 20,
                         ),
+                        onPressed: () => provider.speakShortSummary(video),
                       ),
-                      Container(height: 16, width: 1, color: Colors.black12),
-                      // Bookmark Button
+                      // Bookmark Action
                       IconButton(
-                        constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
-                        padding: EdgeInsets.zero,
-                        tooltip: 'Bookmark video',
-                        onPressed: () => provider.toggleBookmark(video),
+                        constraints: const BoxConstraints(),
+                        padding: const EdgeInsets.symmetric(horizontal: 6),
+                        iconSize: 18,
                         icon: Icon(
                           video.isBookmarked ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
                           color: video.isBookmarked ? const Color(0xFFFF9500) : const Color(0xFF4B5563),
-                          size: 20,
                         ),
+                        onPressed: () => provider.toggleBookmark(video),
                       ),
-                      Container(height: 16, width: 1, color: Colors.black12),
-                      // Share Button
+                      // Share Action
                       IconButton(
-                        constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
-                        padding: EdgeInsets.zero,
-                        tooltip: 'Share summary',
+                        constraints: const BoxConstraints(),
+                        padding: const EdgeInsets.symmetric(horizontal: 6),
+                        iconSize: 17,
+                        icon: const Icon(Icons.share_rounded, color: Color(0xFF4B5563)),
                         onPressed: () => _shareSummary(context),
-                        icon: const Icon(Icons.share_rounded, color: Color(0xFF4B5563), size: 19),
                       ),
                     ],
                   ),

@@ -1,6 +1,8 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/app_provider.dart';
+import 'inshorts_feed_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({Key? key}) : super(key: key);
@@ -114,77 +116,105 @@ class _SettingsScreenState extends State<SettingsScreen> {
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
-          // ── Section 1: Server Configuration ──────────────────────────────
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: const Color(0xFF181F2B),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.white12),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      'Backend Server Host',
-                      style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: provider.isOnline ? Colors.green.withOpacity(0.2) : Colors.red.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(12),
+          // ── Section 1: Server Configuration (Only visible in Debug Mode) ──
+          if (kDebugMode) ...[
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xFF181F2B),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.white12),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Backend Server Host',
+                        style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
                       ),
-                      child: Text(
-                        provider.isOnline ? '● Online' : '● Offline',
-                        style: TextStyle(
-                          color: provider.isOnline ? Colors.greenAccent : Colors.redAccent,
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: provider.isOnline ? Colors.green.withOpacity(0.2) : Colors.red.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          provider.isOnline ? '● Online' : '● Offline',
+                          style: TextStyle(
+                            color: provider.isOnline ? Colors.greenAccent : Colors.redAccent,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: _urlController,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: InputDecoration(
-                    hintText: 'http://10.0.2.2:8000',
-                    hintStyle: const TextStyle(color: Colors.white30),
-                    filled: true,
-                    fillColor: const Color(0xFF0F141C),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: _urlController,
+                    style: const TextStyle(color: Colors.white),
+                    decoration: InputDecoration(
+                      hintText: 'http://10.0.2.2:8000',
+                      hintStyle: const TextStyle(color: Colors.white30),
+                      filled: true,
+                      fillColor: const Color(0xFF0F141C),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 12),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () async {
-                      final messenger = ScaffoldMessenger.of(context);
-                      await provider.setServerUrl(_urlController.text);
-                      if (mounted) {
-                        messenger.showSnackBar(
-                          const SnackBar(content: Text('Server URL updated!')),
-                        );
-                      }
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF2563EB),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        final messenger = ScaffoldMessenger.of(context);
+                        await provider.setServerUrl(_urlController.text);
+                        if (mounted) {
+                          messenger.showSnackBar(
+                            const SnackBar(content: Text('Server URL updated!')),
+                          );
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF2563EB),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: const Text('Save & Reconnect', style: TextStyle(color: Colors.white)),
                     ),
-                    child: const Text('Save & Reconnect', style: TextStyle(color: Colors.white)),
                   ),
-                ),
-              ],
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+          ],
+
+          // ── Section 4: Bookmarks Shortcut ───────────────────────────────
+          Material(
+            color: const Color(0xFF181F2B),
+            clipBehavior: Clip.antiAlias,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+              side: const BorderSide(color: Colors.white12),
+            ),
+            child: ListTile(
+              contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 4),
+              leading: const Icon(Icons.bookmark_rounded, color: Color(0xFFFF9500), size: 24),
+              title: const Text('Saved Bookmarks', style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold)),
+              subtitle: const Text('Quick access to your bookmarked digests', style: TextStyle(color: Colors.white54, fontSize: 11.5)),
+              trailing: const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white24, size: 14),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const InShortsFeedScreen(isBookmarksPage: true),
+                  ),
+                );
+              },
             ),
           ),
 

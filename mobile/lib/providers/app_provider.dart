@@ -27,7 +27,12 @@ class AppProvider with ChangeNotifier {
   bool _isPlayingTts = false;
   String? _currentlySpeakingVideoId;
 
-  List<VideoModel> get videos => _videos;
+  List<VideoModel> get videos {
+    if (_showBookmarkedOnly) {
+      return _videos.where((v) => v.isBookmarked).toList();
+    }
+    return _videos;
+  }
   List<ChannelModel> get channels => _channels;
   bool get isLoading => _isLoading;
   bool get isSyncing => _isSyncing;
@@ -89,7 +94,7 @@ class AppProvider with ChangeNotifier {
       final newVideos = await _apiService.getVideos(
         channelId: _selectedChannelId,
         category: _selectedCategory,
-        bookmarkedOnly: _showBookmarkedOnly,
+        bookmarkedOnly: false, // Maintain full local cache and filter client-side
         search: _searchQuery,
       );
 
@@ -133,7 +138,14 @@ class AppProvider with ChangeNotifier {
 
   void toggleBookmarkedOnly() {
     _showBookmarkedOnly = !_showBookmarkedOnly;
-    refreshFeed();
+    notifyListeners();
+  }
+
+  void setBookmarkedOnly(bool val) {
+    if (_showBookmarkedOnly != val) {
+      _showBookmarkedOnly = val;
+      notifyListeners();
+    }
   }
 
   void setSearchQuery(String query) {

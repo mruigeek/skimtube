@@ -1,5 +1,7 @@
+from __future__ import annotations
 import os
 import sys
+from typing import Optional
 import datetime
 from fastapi import FastAPI, Depends, HTTPException, BackgroundTasks, Query
 from fastapi.middleware.cors import CORSMiddleware
@@ -74,16 +76,16 @@ class VideoFeedResponse(BaseModel):
     short_summary: str
     content_type: str
     is_bookmarked: bool
-    label_api: str | None = None
-    label_local: str | None = None
+    label_api: Optional[str] = None
+    label_local: Optional[str] = None
 
     class Config:
         from_attributes = True
 
 class VideoDetailResponse(VideoFeedResponse):
-    summary_api: str | None = None
-    summary_local: str | None = None
-    summary_file: str | None = None
+    summary_api: Optional[str] = None
+    summary_local: Optional[str] = None
+    summary_file: Optional[str] = None
 
 
 # ---------------------------------------------------------------------------
@@ -110,10 +112,10 @@ def check_health():
 
 @app.get("/api/videos", response_model=list[VideoFeedResponse])
 def get_videos(
-    channel_id: str | None = None,
-    category: str | None = None,
+    channel_id: Optional[str] = None,
+    category: Optional[str] = None,
     bookmarked_only: bool = False,
-    search: str | None = None,
+    search: Optional[str] = None,
     db: Session = Depends(get_db),
 ):
     query = db.query(Video)
