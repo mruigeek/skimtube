@@ -19,15 +19,13 @@ class FullSummaryModal extends StatefulWidget {
   State<FullSummaryModal> createState() => _FullSummaryModalState();
 }
 
-class _FullSummaryModalState extends State<FullSummaryModal> with SingleTickerProviderStateMixin {
-  late TabController _tabController;
+class _FullSummaryModalState extends State<FullSummaryModal> {
   VideoModel? _fullVideo;
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
     _loadFullDetail();
   }
 
@@ -59,16 +57,13 @@ class _FullSummaryModalState extends State<FullSummaryModal> with SingleTickerPr
   }
 
   @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     final video = _fullVideo ?? widget.fallbackVideo;
-    final summaryApi = video.summaryApi ?? '*Digest not available via TranscriptAPI.*';
-    final summaryLocal = video.summaryLocal ?? '*Digest not available via local fallback.*';
+    final String summaryContent = (video.summaryApi != null && video.summaryApi!.isNotEmpty)
+        ? video.summaryApi!
+        : (video.summaryLocal != null && video.summaryLocal!.isNotEmpty)
+            ? video.summaryLocal!
+            : video.shortSummary;
 
     return Container(
       height: MediaQuery.of(context).size.height * 0.88,
@@ -130,42 +125,11 @@ class _FullSummaryModalState extends State<FullSummaryModal> with SingleTickerPr
           ),
           const SizedBox(height: 12),
 
-          // Version A / Version B Tab Bar
-          Container(
-            margin: const EdgeInsets.symmetric(horizontal: 20),
-            height: 42,
-            decoration: BoxDecoration(
-              color: const Color(0xFF1E2634),
-              borderRadius: BorderRadius.circular(21),
-            ),
-            child: TabBar(
-              controller: _tabController,
-              indicator: BoxDecoration(
-                color: const Color(0xFF2563EB),
-                borderRadius: BorderRadius.circular(21),
-              ),
-              labelColor: Colors.white,
-              unselectedLabelColor: Colors.white60,
-              labelStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
-              tabs: const [
-                Tab(text: '🔵 Version A (API)'),
-                Tab(text: '🟢 Version B (Local)'),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
-
-          // Tab Views with Full Markdown Content
+          // Single Full Summary Markdown Content View
           Expanded(
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator(color: Color(0xFF2563EB)))
-                : TabBarView(
-                    controller: _tabController,
-                    children: [
-                      _buildMarkdownView(summaryApi),
-                      _buildMarkdownView(summaryLocal),
-                    ],
-                  ),
+                : _buildMarkdownView(summaryContent),
           ),
 
           // Bottom Action Bar: Open on YouTube
@@ -203,11 +167,39 @@ class _FullSummaryModalState extends State<FullSummaryModal> with SingleTickerPr
     );
   }
 
+  String _cleanMarkdownContent(String raw) {
+    // 1. Remove TL;DR header and its content block up to ## Key Takeaways
+    String clean = raw.replaceAll(
+      RegExp(r'##\s*TL;?DR[\s\S]*?(?=##\s*Key Takeaways|##\s*Detailed Breakdown|$)', caseSensitive: false),
+      '',
+    );
+
+    // 2. Clean out meta-attribution phrases & opening filler phrases
+    clean = clean.replaceAll(
+      RegExp(
+        r'\b(The speaker begins by stating that|The speaker begins by stating|The speaker begins by|The speaker states that|The speaker states|The speaker opens with|The speaker mentions that|The speaker mentions|The speaker explains that|The speaker explains|The speaker discusses|The speaker suggests|The speaker advises|The speaker highlights|The presenter begins by stating|The presenter begins by|The presenter recommends|The presenter suggests|The presenter advises|The video begins by stating|The video begins by|The video starts by stating|The video starts by|The video starts with|The video discusses|The video covers|The author explains|In this video|According to the speaker)\b\s*',
+        caseSensitive: false,
+      ),
+      '',
+    );
+
+    // 3. Clean any leftover standalone "that " at sentence or bullet starts
+    clean = clean.replaceAll(RegExp(r'(^|\n|-\s+)\s*that\s+', caseSensitive: false), r'\1');
+
+    // 4. Ensure capital first letter after bullet points
+    clean = clean.replaceAllMapped(
+      RegExp(r'(-\s+)([a-z])'),
+      (match) => '${match.group(1)}${match.group(2)!.toUpperCase()}',
+    );
+
+    return clean.trim();
+  }
+
   Widget _buildMarkdownView(String markdownContent) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Markdown(
-        data: markdownContent,
+        data: _cleanMarkdownContent(markdownContent),
         physics: const BouncingScrollPhysics(),
         styleSheet: MarkdownStyleSheet(
           h1: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),

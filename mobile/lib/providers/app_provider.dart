@@ -4,9 +4,12 @@ import '../models/video.dart';
 import '../models/channel.dart';
 import '../services/api_service.dart';
 
+import '../services/notification_service.dart';
+
 class AppProvider with ChangeNotifier {
   final ApiService _apiService = ApiService();
   final FlutterTts _flutterTts = FlutterTts();
+  final NotificationService _notificationService = NotificationService();
 
   List<VideoModel> _videos = [];
   List<ChannelModel> _channels = [];
@@ -41,6 +44,7 @@ class AppProvider with ChangeNotifier {
 
   AppProvider() {
     _initTts();
+    _notificationService.init();
     loadServerUrl();
     refreshFeed();
     fetchChannels();
@@ -82,12 +86,23 @@ class AppProvider with ChangeNotifier {
 
     try {
       _isOnline = await _apiService.checkHealth();
-      _videos = await _apiService.getVideos(
+      final newVideos = await _apiService.getVideos(
         channelId: _selectedChannelId,
         category: _selectedCategory,
         bookmarkedOnly: _showBookmarkedOnly,
         search: _searchQuery,
       );
+
+      if (_videos.isNotEmpty && newVideos.length > _videos.length) {
+        final diff = newVideos.length - _videos.length;
+        _notificationService.showNotification(
+          id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+          title: "📌 SkimTube — Feed Updated",
+          body: "$diff new byte-sized video digest${diff > 1 ? 's' : ''} available!",
+        );
+      }
+
+      _videos = newVideos;
     } catch (e) {
       _isOnline = false;
       _videos = [];

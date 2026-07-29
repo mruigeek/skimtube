@@ -243,13 +243,13 @@ def generate_full_digest(transcript: str, video_title: str, channel_name: str) -
     sampled_transcript = prepare_transcript_for_llm(transcript, max_chars=24000)
 
     if content_type == 'news':
-        guidance = "Focus on WHO, WHAT, WHERE, WHEN, WHY, and key impacts."
+        guidance = "Focus on direct facts: WHO, WHAT, WHERE, WHEN, WHY, and key numerical impacts."
     elif content_type == 'tech':
-        guidance = "Focus on TOOLS USED, STEPS, CODE CONCEPTS, ARCHITECTURE, and KEY ADVANTAGES."
+        guidance = "Focus on direct technical specs: TOOLS USED, STEPS, COMMANDS, ARCHITECTURE, and ADVANTAGES."
     else:
-        guidance = "Focus on CORE ARGUMENTS, CONCRETE NUMBERS/METRICS, CLAIMS, and PRACTICAL TAKEAWAYS."
+        guidance = "Focus on direct claims: CORE ARGUMENTS, CONCRETE METRICS, NUMBERS, and PRACTICAL TAKEAWAYS."
 
-    prompt = f"""You are an expert content analyst producing a structured digest of a YouTube video transcript.
+    prompt = f"""You are an expert content analyst producing a crisp, direct summary digest of a YouTube video transcript.
 If the transcript is in a non-English language, translate and write the digest entirely in clear English.
 
 Video Title: {video_title}
@@ -257,19 +257,19 @@ Channel: {channel_name}
 Category: {content_type}
 Guidance: {guidance}
 
-STRICT OUTPUT RULES — follow every rule without exception:
-- Output ONLY the structured markdown below. No preamble, intro, or closing remarks.
-- Do NOT use phrases like "The video covers", "In this video", "The author explains". State facts directly.
-- Every bullet MUST contain a specific fact, name, number, tool, decision, or argument lifted directly from the transcript.
-
-## TL;DR
-[1–2 sentence summary in English of the core takeaway]
+STRICT OUTPUT & STYLE RULES — follow every rule without exception:
+1. Output ONLY the markdown section headers below (`## Key Takeaways` and `## Detailed Breakdown`).
+2. ABSOLUTELY DO NOT INCLUDE A TL;DR SECTION OR ANY TL;DR HEADER.
+3. ABSOLUTELY ZERO META-ATTRIBUTION OR FILLER WORDS. Never write phrases like "The speaker begins by stating", "The speaker states that", "The speaker begins by", "The speaker suggests", "The video discusses", "The presenter recommends", "The author explains", "In this video", "According to the speaker". State every fact directly as an objective standalone statement.
+   - BAD: "The speaker begins by stating that Bajaj Auto experienced a 42% increase in net profit."
+   - GOOD: "Bajaj Auto experienced a 42% increase in net profit in recent financial results."
+4. Every bullet MUST contain a specific fact, name, number, metric, tool, or decision lifted directly from the transcript.
 
 ## Key Takeaways
-- [3–7 rich bullets with concrete details, numbers, or claims]
+- [3–7 rich, direct bullet points with concrete numbers, data, or technical facts]
 
 ## Detailed Breakdown
-[3–5 paragraph detailed breakdown of the content]
+[3–5 paragraphs of direct, objective analysis detailing the key topics discussed]
 
 Transcript:
 {sampled_transcript}

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/app_provider.dart';
 import '../widgets/inshorts_card.dart';
+import '../widgets/welcome_card.dart';
+
 
 
 class InShortsFeedScreen extends StatefulWidget {
@@ -35,42 +37,24 @@ class _InShortsFeedScreenState extends State<InShortsFeedScreen> {
             )
           else if (provider.videos.isEmpty)
             Center(
-              child: Padding(
-                padding: const EdgeInsets.all(32),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.slideshow_rounded, size: 64, color: Colors.white24),
-                    const SizedBox(height: 16),
-                    const Text(
-                      'No Summaries Available',
-                      style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      'Add channel IDs in Settings or tap "Sync" to generate your daily byte-sized video digests.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(color: Colors.white60, fontSize: 14, height: 1.5),
-                    ),
-                    const SizedBox(height: 24),
-                    ElevatedButton.icon(
-                      onPressed: () => provider.refreshFeed(),
-                      style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF2563EB)),
-                      icon: const Icon(Icons.refresh_rounded, color: Colors.white),
-                      label: const Text('Refresh Feed', style: TextStyle(color: Colors.white)),
-                    ),
-                  ],
-                ),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 520),
+                child: const WelcomeCard(),
               ),
             )
           else
-            PageView.builder(
-              controller: _pageController,
-              scrollDirection: Axis.vertical,
-              itemCount: provider.videos.length,
-              itemBuilder: (context, index) {
-                return InShortsCard(video: provider.videos[index]);
-              },
+            Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 520),
+                child: PageView.builder(
+                  controller: _pageController,
+                  scrollDirection: Axis.vertical,
+                  itemCount: provider.videos.length,
+                  itemBuilder: (context, index) {
+                    return InShortsCard(video: provider.videos[index]);
+                  },
+                ),
+              ),
             ),
 
 
