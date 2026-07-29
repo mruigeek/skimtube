@@ -128,8 +128,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
-          // ── Section 1: Server Configuration (Only visible in Debug Mode) ──
-          if (kDebugMode) ...[
+          // ── Section 1: Server Configuration (Visible in Debug Mode or Web) ──
+          if (kDebugMode || kIsWeb) ...[
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(

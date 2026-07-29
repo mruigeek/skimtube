@@ -14,8 +14,12 @@ import requests
 # Add root project path to sys.path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from backend.database import init_db, get_db, Channel, Video, SessionLocal
-from backend.pipeline import process_all_channels, OLLAMA_API_URL, OLLAMA_MODEL
+try:
+    from backend.database import init_db, get_db, Channel, Video, SessionLocal
+    from backend.pipeline import process_all_channels, OLLAMA_API_URL, OLLAMA_MODEL
+except ModuleNotFoundError:
+    from database import init_db, get_db, Channel, Video, SessionLocal
+    from pipeline import process_all_channels, OLLAMA_API_URL, OLLAMA_MODEL
 
 app = FastAPI(
     title="YouTube Summarizer & InShorts API",

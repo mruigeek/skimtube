@@ -1,6 +1,6 @@
 {
-    "name": "youtube_inshorts",
-    "short_name": "youtube_inshorts",
+    "name": "SkimTube",
+    "short_name": "SkimTube",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

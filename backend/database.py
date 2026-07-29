@@ -55,7 +55,10 @@ def seed_from_existing_json():
     """Migrate channels.json into SQLite if database is fresh."""
     db = SessionLocal()
     try:
-        channels_file = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "channels.json")
+        parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        channels_file = os.path.join(parent_dir, "channels.json")
+        if not os.path.exists(channels_file):
+            channels_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "channels.json")
         if os.path.exists(channels_file):
             with open(channels_file, 'r', encoding='utf-8') as f:
                 data = json.load(f)

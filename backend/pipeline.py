@@ -11,19 +11,25 @@ import re
 import sys
 from dotenv import load_dotenv
 from sqlalchemy.orm import Session
-from backend.database import Video, Channel, SessionLocal
+try:
+    from backend.database import Video, Channel, SessionLocal
+except ModuleNotFoundError:
+    from database import Video, Channel, SessionLocal
 
 # Load environment variables
 load_dotenv()
 
-SUMMARIES_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'summaries')
+_parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if os.path.exists(os.path.join(_parent_dir, '.git')) or os.path.exists(os.path.join(_parent_dir, 'channels.json')):
+    SUMMARIES_DIR = os.path.join(_parent_dir, 'summaries')
+else:
+    SUMMARIES_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'summaries')
+os.makedirs(SUMMARIES_DIR, exist_ok=True)
 OLLAMA_API_URL = os.getenv('OLLAMA_API_URL', 'http://localhost:11434/api/generate')
 OLLAMA_MODEL = os.getenv('OLLAMA_MODEL', 'gemma3:4b')
 
 TRANSCRIPTAPI_BASE = 'https://transcriptapi.com/api/v2'
 TRANSCRIPTAPI_KEY = os.getenv('TRANSCRIPTAPI_KEY', '')
-
-os.makedirs(SUMMARIES_DIR, exist_ok=True)
 
 
 # ---------------------------------------------------------------------------
@@ -145,7 +151,11 @@ def get_transcript_from_youtube_api(video_id: str) -> str | None:
 
 
 def get_transcript_from_ytdlp_subtitles(video_id: str) -> str | None:
-    downloads_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "downloads")
+    _parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    if os.path.exists(os.path.join(_parent_dir, '.git')) or os.path.exists(os.path.join(_parent_dir, 'channels.json')):
+        downloads_dir = os.path.join(_parent_dir, "downloads")
+    else:
+        downloads_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "downloads")
     os.makedirs(downloads_dir, exist_ok=True)
     video_url = f"https://www.youtube.com/watch?v={video_id}"
 
@@ -286,7 +296,40 @@ def prepare_transcript_for_llm(transcript: str, max_chars: int = 24000) -> str:
     return f"{start}\n\n[... middle section ...]\n\n{middle}\n\n[... final section ...]\n\n{end}"
 
 
+def call_gemini(prompt: str) -> str | None:
+    api_key = os.getenv("GEMINI_API_KEY")
+    if not api_key:
+        return None
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={api_key}"
+    payload = {
+        "contents": [
+            {
+                "parts": [
+                    {"text": prompt}
+                ]
+            }
+        ],
+        "generationConfig": {
+            "temperature": 0.2,
+            "maxOutputTokens": 2048
+        }
+    }
+    try:
+        resp = requests.post(url, json=payload, timeout=60)
+        resp.raise_for_status()
+        data = resp.json()
+        text = data['candidates'][0]['content']['parts'][0]['text']
+        return text.strip()
+    except Exception as e:
+        print(f"  [-] Gemini API request failed: {e}")
+        return None
+
+
 def call_ollama(prompt: str) -> str | None:
+    # If Gemini API key is configured, route to Gemini instead for production
+    if os.getenv("GEMINI_API_KEY"):
+        return call_gemini(prompt)
+
     payload = {
         "model": OLLAMA_MODEL,
         "prompt": prompt,
