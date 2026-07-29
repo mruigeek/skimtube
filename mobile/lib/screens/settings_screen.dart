@@ -77,11 +77,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
               if (name.isNotEmpty && cid.isNotEmpty) {
                 final provider = Provider.of<AppProvider>(context, listen: false);
                 final messenger = ScaffoldMessenger.of(context);
-                final navigator = Navigator.of(ctx);
+                
+                // Close dialog immediately
+                Navigator.pop(ctx);
+                
                 try {
                   await provider.addChannel(cid, name);
                   if (mounted) {
-                    navigator.pop();
                     messenger.showSnackBar(
                       SnackBar(content: Text('Added channel "$name" and initiated sync!')),
                     );
