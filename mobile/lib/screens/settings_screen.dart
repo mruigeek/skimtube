@@ -12,7 +12,6 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  final TextEditingController _urlController = TextEditingController();
   final TextEditingController _channelIdController = TextEditingController();
   final TextEditingController _channelNameController = TextEditingController();
 
@@ -20,13 +19,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void initState() {
     super.initState();
     final provider = Provider.of<AppProvider>(context, listen: false);
-    _urlController.text = provider.serverUrl;
     provider.fetchSchedule();
   }
 
   @override
   void dispose() {
-    _urlController.dispose();
     _channelIdController.dispose();
     _channelNameController.dispose();
     super.dispose();
@@ -130,82 +127,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
-          // ── Section 1: Server Configuration (Only visible in Debug Mode) ──
-          if (kDebugMode) ...[
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: const Color(0xFF181F2B),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.white12),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'Backend Server Host',
-                        style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: provider.isOnline ? Colors.green.withOpacity(0.2) : Colors.red.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          provider.isOnline ? '● Online' : '● Offline',
-                          style: TextStyle(
-                            color: provider.isOnline ? Colors.greenAccent : Colors.redAccent,
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: _urlController,
-                    style: const TextStyle(color: Colors.white),
-                    decoration: InputDecoration(
-                      hintText: 'http://10.0.2.2:8000',
-                      hintStyle: const TextStyle(color: Colors.white30),
-                      filled: true,
-                      fillColor: const Color(0xFF0F141C),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide.none,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () async {
-                        final messenger = ScaffoldMessenger.of(context);
-                        await provider.setServerUrl(_urlController.text);
-                        if (mounted) {
-                          messenger.showSnackBar(
-                            const SnackBar(content: Text('Server URL updated!')),
-                          );
-                        }
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF2563EB),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                      child: const Text('Save & Reconnect', style: TextStyle(color: Colors.white)),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 20),
-          ],
 
           // ── Section 4: Bookmarks Shortcut ───────────────────────────────
           Material(

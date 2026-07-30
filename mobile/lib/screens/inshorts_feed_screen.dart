@@ -209,7 +209,7 @@ class _InShortsFeedScreenState extends State<InShortsFeedScreen> {
                     // Actions
                     Row(
                       children: [
-                        if (!widget.isBookmarksPage) ...[
+                        if (!widget.isBookmarksPage)
                           IconButton(
                             tooltip: provider.showBookmarkedOnly ? 'Show all summaries' : 'Show bookmarked only',
                             icon: Icon(
@@ -221,20 +221,6 @@ class _InShortsFeedScreenState extends State<InShortsFeedScreen> {
                             ),
                             onPressed: () => provider.toggleBookmarkedOnly(),
                           ),
-                          IconButton(
-                            tooltip: 'Settings',
-                            icon: const Icon(Icons.settings_rounded, color: Colors.white70, size: 22),
-                            onPressed: () async {
-                              await Navigator.push(
-                                context,
-                                MaterialPageRoute(builder: (context) => const SettingsScreen()),
-                              );
-                              if (context.mounted) {
-                                provider.refreshFeed();
-                              }
-                            },
-                          ),
-                        ],
                       ],
                     ),
                   ],
