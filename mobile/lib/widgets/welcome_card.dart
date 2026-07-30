@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:provider/provider.dart';
+import '../providers/app_provider.dart';
 import '../screens/settings_screen.dart';
 
 class WelcomeCard extends StatefulWidget {
@@ -169,16 +171,13 @@ class _WelcomeCardState extends State<WelcomeCard> {
 
                           // Paragraph Body
                           Expanded(
-                            child: SingleChildScrollView(
-                              physics: const BouncingScrollPhysics(),
-                              child: Text(
-                                _welcomeBody,
-                                style: const TextStyle(
-                                  color: Color(0xFF374151),
-                                  fontSize: 14.5,
-                                  height: 1.55,
-                                  fontWeight: FontWeight.w400,
-                                ),
+                            child: Text(
+                              _welcomeBody,
+                              style: const TextStyle(
+                                color: Color(0xFF374151),
+                                fontSize: 14.5,
+                                height: 1.55,
+                                fontWeight: FontWeight.w400,
                               ),
                             ),
                           ),
@@ -250,11 +249,14 @@ class _WelcomeCardState extends State<WelcomeCard> {
                     child: SizedBox(
                       width: double.infinity,
                       child: ElevatedButton.icon(
-                        onPressed: () {
-                          Navigator.push(
+                        onPressed: () async {
+                          await Navigator.push(
                             context,
                             MaterialPageRoute(builder: (context) => const SettingsScreen()),
                           );
+                          if (context.mounted) {
+                            Provider.of<AppProvider>(context, listen: false).refreshFeed();
+                          }
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF2563EB), // Royal Blue

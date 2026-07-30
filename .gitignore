@@ -15,3 +15,8 @@ downloads/
 .DS_Store
 
 summaries/
+
+# SQLite databases
+*.db
+backend/*.db
+/backend/summarizer.db

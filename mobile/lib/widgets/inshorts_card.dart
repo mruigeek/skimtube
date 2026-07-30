@@ -129,16 +129,13 @@ class InShortsCard extends StatelessWidget {
 
                           // Paragraph Body (Clean readable summary text)
                           Expanded(
-                            child: SingleChildScrollView(
-                              physics: const BouncingScrollPhysics(),
-                              child: Text(
-                                video.shortSummary,
-                                style: const TextStyle(
-                                  color: Color(0xFF374151),
-                                  fontSize: 14.5,
-                                  height: 1.55,
-                                  fontWeight: FontWeight.w400,
-                                ),
+                            child: Text(
+                              video.shortSummary,
+                              style: const TextStyle(
+                                color: Color(0xFF374151),
+                                fontSize: 14.5,
+                                height: 1.55,
+                                fontWeight: FontWeight.w400,
                               ),
                             ),
                           ),
@@ -267,12 +264,15 @@ class InShortsCard extends StatelessWidget {
                               padding: const EdgeInsets.all(4),
                               tooltip: 'Settings',
                               icon: const Icon(Icons.settings_rounded, color: Colors.white70, size: 20),
-                              onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(builder: (context) => const SettingsScreen()),
-                                );
-                              },
+                               onPressed: () async {
+                                 await Navigator.push(
+                                   context,
+                                   MaterialPageRoute(builder: (context) => const SettingsScreen()),
+                                 );
+                                 if (context.mounted) {
+                                   Provider.of<AppProvider>(context, listen: false).refreshFeed();
+                                 }
+                               },
                             ),
                           ],
                         ),

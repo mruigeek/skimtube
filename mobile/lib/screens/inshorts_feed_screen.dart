@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../providers/app_provider.dart';
 import '../widgets/inshorts_card.dart';
 import '../widgets/welcome_card.dart';
+import 'settings_screen.dart';
 
 class InShortsFeedScreen extends StatefulWidget {
   final bool isBookmarksPage;
@@ -208,7 +209,7 @@ class _InShortsFeedScreenState extends State<InShortsFeedScreen> {
                     // Actions
                     Row(
                       children: [
-                        if (!widget.isBookmarksPage)
+                        if (!widget.isBookmarksPage) ...[
                           IconButton(
                             tooltip: provider.showBookmarkedOnly ? 'Show all summaries' : 'Show bookmarked only',
                             icon: Icon(
@@ -220,6 +221,20 @@ class _InShortsFeedScreenState extends State<InShortsFeedScreen> {
                             ),
                             onPressed: () => provider.toggleBookmarkedOnly(),
                           ),
+                          IconButton(
+                            tooltip: 'Settings',
+                            icon: const Icon(Icons.settings_rounded, color: Colors.white70, size: 22),
+                            onPressed: () async {
+                              await Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (context) => const SettingsScreen()),
+                              );
+                              if (context.mounted) {
+                                provider.refreshFeed();
+                              }
+                            },
+                          ),
+                        ],
                       ],
                     ),
                   ],
