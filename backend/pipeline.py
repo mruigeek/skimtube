@@ -517,7 +517,10 @@ def cleanup_old_summaries(db: Session, max_hours: int = 24):
         now = datetime.datetime.now(datetime.timezone.utc)
         cutoff = now - datetime.timedelta(hours=max_hours)
         
-        old_videos = db.query(Video).filter(Video.published_at < cutoff.replace(tzinfo=None)).all()
+        old_videos = db.query(Video).filter(
+            Video.published_at < cutoff.replace(tzinfo=None),
+            Video.is_bookmarked == False
+        ).all()
         purged_count = 0
         for v in old_videos:
             if v.summary_file and os.path.exists(v.summary_file):
@@ -592,11 +595,20 @@ def process_all_channels(db: Session = None):
                 transcript_api = get_transcript_from_transcriptapi(video_id)
                 transcript_local = get_transcript_local_fallback(video_id)
 
-                if not transcript_api and not transcript_local:
-                    print(f"[-] Skipping {video_id}: No transcript available.")
+                main_transcript = transcript_api or transcript_local
+                label_api_val = "TranscriptAPI" if transcript_api else ("Local Fallback" if transcript_local else "Description Fallback")
+                label_local_val = "Local Fallback" if transcript_local else "Unavailable"
+
+                if not main_transcript:
+                    # Fallback to RSS feed summary (description) if transcripts are blocked/missing
+                    main_transcript = getattr(entry, 'summary', '')
+                    label_local_val = "Description Fallback"
+                    print(f"  [*] No transcript found for {video_id}. Falling back to video description.")
+
+                if not main_transcript or not main_transcript.strip():
+                    print(f"[-] Skipping {video_id}: No transcript or description available.")
                     continue
 
-                main_transcript = transcript_api or transcript_local
                 content_type = detect_content_type(ch.name, title)
 
                 # Generate InShorts short summary (~100 words)
@@ -633,8 +645,8 @@ def process_all_channels(db: Session = None):
                     summary_file=filepath,
                     summary_api=full_digest,
                     summary_local=full_digest,
-                    label_api="TranscriptAPI" if transcript_api else "Local Fallback",
-                    label_local="Local Fallback" if transcript_local else "Unavailable",
+                    label_api=label_api_val,
+                    label_local=label_local_val,
                     content_type=content_type,
                     processed_at=datetime.datetime.utcnow()
                 )

@@ -19,7 +19,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void initState() {
     super.initState();
     final provider = Provider.of<AppProvider>(context, listen: false);
-    provider.fetchSchedule();
+    provider.fetchChannels();
   }
 
   @override
@@ -55,7 +55,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               controller: _channelIdController,
               style: const TextStyle(color: Colors.white),
               decoration: const InputDecoration(
-                labelText: 'Channel ID (e.g. UCBJycsmduvYEL83R_U4JriQ)',
+                labelText: 'Channel Handle/URL/ID (e.g. @MKBHD or URL)',
                 labelStyle: TextStyle(color: Colors.white60),
                 enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
               ),
@@ -153,120 +153,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
 
-          const SizedBox(height: 24),
 
-          // ── Section 5: Daily Sync Scheduler ─────────────────────────────
-          const Text(
-            'Daily Sync Schedule',
-            style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: const Color(0xFF181F2B),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.white12),
-            ),
-            child: Column(
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Automatic Daily Sync',
-                          style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold),
-                        ),
-                        SizedBox(height: 4),
-                        Text(
-                          'Summarize new uploads automatically',
-                          style: TextStyle(color: Colors.white54, fontSize: 11.5),
-                        ),
-                      ],
-                    ),
-                    Switch(
-                      value: provider.scheduleEnabled,
-                      activeColor: const Color(0xFF60A5FA),
-                      onChanged: (bool val) {
-                        provider.updateSchedule(
-                          val,
-                          provider.scheduleHour,
-                          provider.scheduleMinute,
-                        );
-                      },
-                    ),
-                  ],
-                ),
-                if (provider.scheduleEnabled) ...[
-                  const Divider(color: Colors.white10, height: 24),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'Scheduled Time',
-                        style: TextStyle(color: Colors.white, fontSize: 14.5),
-                      ),
-                      TextButton.icon(
-                        style: TextButton.styleFrom(
-                          foregroundColor: const Color(0xFF60A5FA),
-                          backgroundColor: const Color(0xFF0F141C),
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            side: const BorderSide(color: Colors.white12),
-                          ),
-                        ),
-                        icon: const Icon(Icons.access_time_rounded, size: 16),
-                        label: Text(
-                          _formatTime(provider.scheduleHour, provider.scheduleMinute),
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        onPressed: () async {
-                          final selectedTime = await showTimePicker(
-                            context: context,
-                            initialTime: TimeOfDay(
-                              hour: provider.scheduleHour,
-                              minute: provider.scheduleMinute,
-                            ),
-                            builder: (context, child) {
-                              return Theme(
-                                data: Theme.of(context).copyWith(
-                                  colorScheme: const ColorScheme.dark(
-                                    primary: Color(0xFF2563EB),
-                                    onPrimary: Colors.white,
-                                    surface: Color(0xFF141923),
-                                    onSurface: Colors.white,
-                                  ),
-                                  textButtonTheme: TextButtonThemeData(
-                                    style: TextButton.styleFrom(
-                                      foregroundColor: const Color(0xFF60A5FA),
-                                    ),
-                                  ),
-                                ),
-                                child: child!,
-                              );
-                            },
-                          );
-                          if (selectedTime != null) {
-                            provider.updateSchedule(
-                              provider.scheduleEnabled,
-                              selectedTime.hour,
-                              selectedTime.minute,
-                            );
-                          }
-                        },
-                      ),
-                    ],
-                  ),
-                ],
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 24),
 
           // ── Section 2: Channel Management ────────────────────────────────
           Row(
@@ -288,7 +175,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 20),
               child: Text(
-                'No channels added yet. Tap "+" to add a YouTube channel ID.',
+                'No channels added yet. Tap "+" to add a YouTube channel.',
                 style: TextStyle(color: Colors.white54, fontSize: 14),
               ),
             )
@@ -334,7 +221,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
-              onPressed: provider.isSyncing ? null : () => provider.triggerSync(),
+              onPressed: (provider.isSyncing || provider.channels.isEmpty) ? null : () => provider.triggerSync(),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF10B981), // Emerald Green
                 foregroundColor: Colors.white,

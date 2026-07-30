@@ -158,12 +158,16 @@ def process_channel(channel: dict, state: dict):
         transcript_api = get_transcript_from_transcriptapi(video_id)
         transcript_local = get_transcript_local_fallback(video_id)
 
-        if not transcript_api and not transcript_local:
-            print(f"  [-] No transcript from either source. Skipping '{title}'.")
-            continue
-
         main_transcript = transcript_api or transcript_local
-        transcript_label = "TranscriptAPI" if transcript_api else "Local Fallback"
+        transcript_label = "TranscriptAPI" if transcript_api else ("Local Fallback" if transcript_local else "Description Fallback")
+
+        if not main_transcript:
+            main_transcript = getattr(entry, 'summary', '')
+            print(f"  [*] No transcript found. Falling back to video description.")
+
+        if not main_transcript or not main_transcript.strip():
+            print(f"  [-] No transcript or description available. Skipping '{title}'.")
+            continue
 
         summary_digest = generate_summary(main_transcript, title, channel_name)
 

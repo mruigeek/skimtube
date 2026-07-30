@@ -1,6 +1,7 @@
 from __future__ import annotations
 import os
 import sys
+import re
 import json
 from typing import Optional
 import datetime
@@ -223,13 +224,69 @@ def get_channels(db: Session = Depends(get_db)):
     return db.query(Channel).order_by(Channel.name.asc()).all()
 
 
+def resolve_channel_id(input_str: str) -> Optional[str]:
+    input_str = input_str.strip()
+    
+    # 1. Check if it's already a valid channel ID
+    if re.match(r"^UC[a-zA-Z0-9_-]{22}$", input_str):
+        return input_str
+        
+    # 2. Extract handle or construct URL
+    url = None
+    if input_str.startswith("http://") or input_str.startswith("https://"):
+        url = input_str
+    elif input_str.startswith("@"):
+        url = f"https://www.youtube.com/{input_str}"
+    else:
+        url = f"https://www.youtube.com/@{input_str}"
+        
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept-Language": "en-US,en;q=0.9"
+    }
+    
+    try:
+        resp = requests.get(url, headers=headers, timeout=15)
+        if resp.status_code != 200:
+            return None
+            
+        html = resp.text
+        
+        # Method 1: Look for RSS feed link
+        match = re.search(r"youtube\.com/feeds/videos\.xml\?channel_id=(UC[a-zA-Z0-9_-]{22})", html)
+        if match:
+            return match.group(1)
+            
+        # Method 2: Look for itemprop="channelId"
+        match = re.search(r'itemprop="channelId"\s+content="(UC[a-zA-Z0-9_-]{22})"', html)
+        if match:
+            return match.group(1)
+            
+        # Method 3: Look for link rel="alternate"
+        match = re.search(r'href="https://www\.youtube\.com/channel/(UC[a-zA-Z0-9_-]{22})"', html)
+        if match:
+            return match.group(1)
+            
+    except Exception:
+        pass
+        
+    return None
+
+
 @app.post("/api/channels", response_model=ChannelResponse)
 def add_channel(channel: ChannelCreate, db: Session = Depends(get_db)):
-    existing = db.query(Channel).filter(Channel.channel_id == channel.channel_id).first()
+    resolved_id = resolve_channel_id(channel.channel_id)
+    if not resolved_id:
+        raise HTTPException(
+            status_code=400,
+            detail="Could not resolve the channel handle or URL to a valid YouTube Channel ID."
+        )
+
+    existing = db.query(Channel).filter(Channel.channel_id == resolved_id).first()
     if existing:
         raise HTTPException(status_code=400, detail="Channel already exists")
 
-    new_ch = Channel(channel_id=channel.channel_id.strip(), name=channel.name.strip())
+    new_ch = Channel(channel_id=resolved_id, name=channel.name.strip())
     db.add(new_ch)
     db.commit()
     db.refresh(new_ch)
