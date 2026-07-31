@@ -305,8 +305,25 @@ def delete_channel(channel_id: str, db: Session = Depends(get_db)):
 
 @app.post("/api/sync")
 def trigger_sync(background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+    try:
+        import backend.pipeline as pipeline
+    except ModuleNotFoundError:
+        import pipeline
+
+    if getattr(pipeline, "IS_SYNCING", False):
+        return {"status": "already_syncing", "message": "Feed sync & summary pipeline is already running."}
+
     background_tasks.add_task(process_all_channels)
     return {"status": "sync_started", "message": "Background feed sync & summary pipeline initiated."}
+
+
+@app.get("/api/sync/status")
+def get_sync_status():
+    try:
+        import backend.pipeline as pipeline
+    except ModuleNotFoundError:
+        import pipeline
+    return {"is_syncing": getattr(pipeline, "IS_SYNCING", False)}
 
 
 if __name__ == "__main__":

@@ -56,6 +56,26 @@ class _FullSummaryModalState extends State<FullSummaryModal> {
     }
   }
 
+  String _getRelativeTime(String publishedAtStr) {
+    try {
+      final DateTime dt = DateTime.parse(publishedAtStr);
+      final DateTime now = DateTime.now();
+      final Duration diff = now.difference(dt);
+      
+      if (diff.inDays >= 1) {
+        return '${diff.inDays}d ago';
+      } else if (diff.inHours >= 1) {
+        return '${diff.inHours}h ago';
+      } else if (diff.inMinutes >= 1) {
+        return '${diff.inMinutes}m ago';
+      } else {
+        return 'just now';
+      }
+    } catch (_) {
+      return '';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final video = _fullVideo ?? widget.fallbackVideo;
@@ -95,7 +115,9 @@ class _FullSummaryModalState extends State<FullSummaryModal> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        video.channelName,
+                        video.publishedAt.isNotEmpty
+                            ? '${video.channelName} • ${_getRelativeTime(video.publishedAt)}'
+                            : video.channelName,
                         style: const TextStyle(
                           color: Color(0xFFFF3B30),
                           fontSize: 13,

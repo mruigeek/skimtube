@@ -30,7 +30,7 @@ Create a virtual environment (optional but recommended) and install the dependen
 ```bash
 python -m venv venv
 source venv/bin/activate  # On Windows use: venv\Scripts\activate
-pip install -r requirements.txt
+pip install -r backend/requirements.txt
 ```
 
 ### 4. Configuration
@@ -49,7 +49,7 @@ Edit the `channels.json` file to include the YouTube channels you wish to monito
 ### 5. Running the Script
 Run the script manually:
 ```bash
-python main.py
+python backend/app.py
 ```
 You will see output in the console, and summaries will be saved as Markdown files in the `summaries/` directory.
 

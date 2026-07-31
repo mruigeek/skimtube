@@ -209,6 +209,24 @@ class _InShortsFeedScreenState extends State<InShortsFeedScreen> {
                     // Actions
                     Row(
                       children: [
+                        if (provider.isSyncing)
+                          const Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 12),
+                            child: SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2.2,
+                                color: Colors.white70,
+                              ),
+                            ),
+                          )
+                        else if (!widget.isBookmarksPage && provider.channels.isNotEmpty)
+                          IconButton(
+                            tooltip: 'Sync Feed',
+                            icon: const Icon(Icons.sync_rounded, color: Colors.white70, size: 22),
+                            onPressed: () => provider.triggerSync(),
+                          ),
                         if (!widget.isBookmarksPage)
                           IconButton(
                             tooltip: provider.showBookmarkedOnly ? 'Show all summaries' : 'Show bookmarked only',
@@ -222,33 +240,6 @@ class _InShortsFeedScreenState extends State<InShortsFeedScreen> {
                             onPressed: () => provider.toggleBookmarkedOnly(),
                           ),
                       ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-          // ── Offline Connection Banner (if backend is offline) ────────────
-          if (!provider.isOnline)
-            Positioned(
-              top: MediaQuery.of(context).padding.top + 56,
-              left: 16,
-              right: 16,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFDC2626).withOpacity(0.9),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Row(
-                  children: [
-                    Icon(Icons.wifi_off_rounded, color: Colors.white, size: 16),
-                    SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Backend Server Offline — Check settings or start FastAPI',
-                        style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
-                      ),
                     ),
                   ],
                 ),

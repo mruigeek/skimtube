@@ -100,7 +100,9 @@ class AppProvider with ChangeNotifier {
     notifyListeners();
 
     try {
+      _channels = await _apiService.getChannels();
       _isOnline = await _apiService.checkHealth();
+      
       final newVideos = await _apiService.getVideos(
         channelId: _selectedChannelId,
         category: _selectedCategory,
@@ -108,8 +110,11 @@ class AppProvider with ChangeNotifier {
         search: _searchQuery,
       );
 
-      if (_videos.isNotEmpty && newVideos.length > _videos.length) {
-        final diff = newVideos.length - _videos.length;
+      final configuredChannelIds = _channels.map((c) => c.channelId).toSet();
+      final filteredVideos = newVideos.where((v) => configuredChannelIds.contains(v.channelId)).toList();
+
+      if (_videos.isNotEmpty && filteredVideos.length > _videos.length) {
+        final diff = filteredVideos.length - _videos.length;
         _notificationService.showNotification(
           id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
           title: "📌 SkimTube — Feed Updated",
@@ -117,7 +122,7 @@ class AppProvider with ChangeNotifier {
         );
       }
 
-      _videos = newVideos;
+      _videos = filteredVideos;
     } catch (e) {
       _isOnline = false;
       _videos = [];
@@ -193,8 +198,16 @@ class AppProvider with ChangeNotifier {
 
     try {
       await _apiService.triggerSync();
-      // Wait a short delay and refresh feed
-      await Future.delayed(const Duration(seconds: 3));
+      
+      // Active polling: wait for server to finish sync or max 30 seconds
+      for (int i = 0; i < 10; i++) {
+        await Future.delayed(const Duration(seconds: 3));
+        final isSyncingOnServer = await _apiService.checkSyncStatus();
+        if (!isSyncingOnServer) {
+          break; // Server is done syncing!
+        }
+      }
+      
       await refreshFeed();
     } catch (_) {
     } finally {

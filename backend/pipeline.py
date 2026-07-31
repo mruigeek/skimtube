@@ -31,6 +31,7 @@ OLLAMA_MODEL = os.getenv('OLLAMA_MODEL', 'gemma3:4b')
 TRANSCRIPTAPI_BASE = 'https://transcriptapi.com/api/v2'
 TRANSCRIPTAPI_KEY = os.getenv('TRANSCRIPTAPI_KEY', '')
 
+IS_SYNCING = False
 
 # ---------------------------------------------------------------------------
 # Transcript Fetching & Cleaning
@@ -365,13 +366,19 @@ def ensure_english_transcript(transcript: str, video_title: str) -> str:
 
 
 def generate_short_inshorts_summary(transcript: str, video_title: str, channel_name: str) -> str:
-    """Generate a crisp ~100 word InShorts-style paragraph for mobile card UI."""
+    """Generate a crisp paragraph for mobile card UI, adapting length for short source text."""
     transcript = ensure_english_transcript(transcript, video_title)
     t_len = len(transcript)
     if t_len > 25000:
         source_text = get_dense_takeaways_for_long_transcript(transcript, video_title)
     else:
         source_text = transcript
+
+    # Adaptive length to avoid repeating info when source is small
+    if len(source_text) < 1000:
+        length_rule = "Write a short, clean paragraph between 40 and 70 words in English. Do NOT repeat the title or stretch the text. State only the facts available."
+    else:
+        length_rule = "Write EXACTLY ONE clean paragraph between 80 and 130 words long in English."
 
     prompt = f"""You are an expert news editor producing a byte-sized InShorts style summary for a mobile card app.
 If the source text is in a non-English language, translate and write the summary in clear English.
@@ -380,9 +387,9 @@ Video Title: {video_title}
 Channel: {channel_name}
 
 INSHORTS SUMMARY RULES:
-1. Write EXACTLY ONE clean paragraph between 80 and 130 words long in English.
+1. {length_rule}
 2. Lead immediately with the primary headline/hook in the first sentence.
-3. Follow with 3 to 5 key concrete facts, figures, tools, decisions, or quotes directly from the source text.
+3. Follow with concrete facts, figures, tools, decisions, or quotes directly from the source text.
 4. Do NOT use filler words like "The video discusses", "In this video", "The speaker explains". State facts directly.
 5. End with a strong concluding sentence summarizing the overall takeaway.
 
@@ -410,6 +417,34 @@ def generate_full_digest(transcript: str, video_title: str, channel_name: str) -
         guidance = "Focus on direct claims: CORE ARGUMENTS, CONCRETE METRICS, NUMBERS, and PRACTICAL TAKEAWAYS."
 
     t_len = len(transcript)
+    
+    if t_len < 1000:
+        # Extremely short fallback description / transcript
+        prompt = f"""You are an expert content analyst producing a highly structured, concise summary digest of a YouTube video.
+If the text is in a non-English language, translate and write it entirely in clear English.
+
+Video Title: {video_title}
+Channel: {channel_name}
+Category: {content_type}
+Guidance: {guidance}
+
+STRICT OUTPUT & STYLE RULES:
+1. Output ONLY the markdown sections: `## TL;DR` and `## Key Takeaways`.
+2. Do NOT include a "Detailed Breakdown" section (the source text is too short).
+3. Do NOT repeat the title or stretch the text. State only the facts available in 1-2 bullet points.
+4. ABSOLUTELY ZERO FILLER.
+
+## TL;DR
+[1 sentence high-level, punchy summary of the video]
+
+## Key Takeaways
+- [1–2 short, direct bullet points with concrete numbers, data, or facts]
+
+Source Text:
+{transcript}
+"""
+        return call_ollama(prompt)
+
     if t_len <= 6000:
         prompt = f"""You are an expert content analyst producing a highly structured, concise summary digest of a YouTube video transcript.
 If the transcript is in a non-English language, translate and write the digest entirely in clear English.
@@ -539,6 +574,8 @@ def cleanup_old_summaries(db: Session, max_hours: int = 24):
 
 def process_all_channels(db: Session = None):
     """Fetch RSS feeds for all channels in DB and process new videos published in last 24h."""
+    global IS_SYNCING
+    IS_SYNCING = True
     close_db_on_exit = False
     if db is None:
         db = SessionLocal()
@@ -656,5 +693,6 @@ def process_all_channels(db: Session = None):
 
         return {"processed": processed_count, "status": "success"}
     finally:
+        IS_SYNCING = False
         if close_db_on_exit:
             db.close()

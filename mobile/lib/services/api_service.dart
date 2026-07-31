@@ -95,17 +95,33 @@ class ApiService {
     return false;
   }
 
-  Future<List<ChannelModel>> getChannels() async {
-    final baseUrl = await getServerUrl();
-    final uri = Uri.parse('$baseUrl/api/channels');
-    final response = await http.get(uri).timeout(const Duration(seconds: 10));
+  static const String _channelsKey = 'local_channels_json';
 
-    if (response.statusCode == 200) {
-      final List<dynamic> list = jsonDecode(response.body);
-      return list.map((json) => ChannelModel.fromJson(json)).toList();
-    } else {
-      throw Exception('Failed to fetch channels');
+  Future<List<ChannelModel>> getLocalChannels() async {
+    final prefs = await SharedPreferences.getInstance();
+    final jsonStr = prefs.getString(_channelsKey);
+    if (jsonStr == null || jsonStr.isEmpty) {
+      return [];
     }
+    try {
+      final List<dynamic> list = jsonDecode(jsonStr);
+      return list.map((json) => ChannelModel.fromJson(json)).toList();
+    } catch (_) {
+      return [];
+    }
+  }
+
+  Future<void> saveLocalChannels(List<ChannelModel> channels) async {
+    final prefs = await SharedPreferences.getInstance();
+    final jsonStr = jsonEncode(channels.map((c) => {
+      'channel_id': c.channelId,
+      'name': c.name,
+    }).toList());
+    await prefs.setString(_channelsKey, jsonStr);
+  }
+
+  Future<List<ChannelModel>> getChannels() async {
+    return getLocalChannels();
   }
 
   Future<ChannelModel> addChannel(String channelId, String name) async {
@@ -115,10 +131,17 @@ class ApiService {
       uri,
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({'channel_id': channelId, 'name': name}),
-    ).timeout(const Duration(seconds: 10));
+    ).timeout(const Duration(seconds: 15));
 
     if (response.statusCode == 200) {
-      return ChannelModel.fromJson(jsonDecode(response.body));
+      final resolvedChannel = ChannelModel.fromJson(jsonDecode(response.body));
+      
+      final local = await getLocalChannels();
+      if (!local.any((c) => c.channelId == resolvedChannel.channelId)) {
+        local.add(resolvedChannel);
+        await saveLocalChannels(local);
+      }
+      return resolvedChannel;
     } else {
       final data = jsonDecode(response.body);
       throw Exception(data['detail'] ?? 'Failed to add channel');
@@ -126,19 +149,47 @@ class ApiService {
   }
 
   Future<void> deleteChannel(String channelId) async {
-    final baseUrl = await getServerUrl();
-    final uri = Uri.parse('$baseUrl/api/channels/$channelId');
-    final response = await http.delete(uri).timeout(const Duration(seconds: 10));
+    final local = await getLocalChannels();
+    local.removeWhere((c) => c.channelId == channelId);
+    await saveLocalChannels(local);
 
-    if (response.statusCode != 200) {
-      throw Exception('Failed to delete channel');
-    }
+    try {
+      final baseUrl = await getServerUrl();
+      final uri = Uri.parse('$baseUrl/api/channels/$channelId');
+      await http.delete(uri).timeout(const Duration(seconds: 5));
+    } catch (_) {}
   }
 
   Future<void> triggerSync() async {
+    final local = await getLocalChannels();
     final baseUrl = await getServerUrl();
+    
+    for (final ch in local) {
+      try {
+        final uri = Uri.parse('$baseUrl/api/channels');
+        await http.post(
+          uri,
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({'channel_id': ch.channelId, 'name': ch.name}),
+        ).timeout(const Duration(seconds: 5));
+      } catch (_) {}
+    }
+
     final uri = Uri.parse('$baseUrl/api/sync');
     await http.post(uri).timeout(const Duration(seconds: 5));
+  }
+
+  Future<bool> checkSyncStatus() async {
+    try {
+      final baseUrl = await getServerUrl();
+      final uri = Uri.parse('$baseUrl/api/sync/status');
+      final response = await http.get(uri).timeout(const Duration(seconds: 4));
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return data['is_syncing'] ?? false;
+      }
+    } catch (_) {}
+    return false;
   }
 
   Future<Map<String, dynamic>> getSchedule() async {

@@ -5,6 +5,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:provider/provider.dart';
 import '../models/video.dart';
 import '../providers/app_provider.dart';
+import 'package:intl/intl.dart';
 import '../screens/settings_screen.dart';
 import 'full_summary_modal.dart';
 
@@ -26,6 +27,35 @@ class InShortsCard extends StatelessWidget {
         '📺 Watch video: https://www.youtube.com/watch?v=${video.videoId}\n\n'
         'Summarized by SkimTube';
     Share.share(text);
+  }
+
+  String _getRelativeTime(String publishedAtStr) {
+    try {
+      final DateTime dt = DateTime.parse(publishedAtStr);
+      final DateTime now = DateTime.now();
+      final Duration diff = now.difference(dt);
+      
+      if (diff.inDays >= 1) {
+        return '${diff.inDays}d ago';
+      } else if (diff.inHours >= 1) {
+        return '${diff.inHours}h ago';
+      } else if (diff.inMinutes >= 1) {
+        return '${diff.inMinutes}m ago';
+      } else {
+        return 'just now';
+      }
+    } catch (_) {
+      return '';
+    }
+  }
+
+  String _formatPublishedAt(String publishedAtStr) {
+    try {
+      final DateTime dt = DateTime.parse(publishedAtStr);
+      return DateFormat('dd MMM yyyy hh:mm a').format(dt);
+    } catch (_) {
+      return '';
+    }
   }
 
   void _showFullSummaryModal(BuildContext context) {
@@ -108,6 +138,22 @@ class InShortsCard extends StatelessWidget {
                                   letterSpacing: 0.2,
                                 ),
                               ),
+                              if (video.publishedAt.isNotEmpty) ...[
+                                const SizedBox(width: 6),
+                                const Text(
+                                  '•',
+                                  style: TextStyle(color: Colors.black38, fontSize: 11),
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  _formatPublishedAt(video.publishedAt),
+                                  style: const TextStyle(
+                                    color: Colors.black45,
+                                    fontSize: 11.5,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
                             ],
                           ),
                           const SizedBox(height: 8),
