@@ -1,4 +1,4 @@
-# youtube_inshorts
+# SkimTube
 
 A new Flutter project.
 

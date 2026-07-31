@@ -6,11 +6,11 @@
 // tree, read text, and verify that the values of widget properties are correct.
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:youtube_inshorts/main.dart';
+import 'package:skimtube/main.dart';
 
 void main() {
   testWidgets('App smoke test', (WidgetTester tester) async {
-    await tester.pumpWidget(const YouTubeInShortsApp());
+    await tester.pumpWidget(const SkimTubeApp());
   });
 }
 

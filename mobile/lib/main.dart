@@ -14,11 +14,11 @@ void main() {
       systemNavigationBarIconBrightness: Brightness.light,
     ),
   );
-  runApp(const YouTubeInShortsApp());
+  runApp(const SkimTubeApp());
 }
 
-class YouTubeInShortsApp extends StatelessWidget {
-  const YouTubeInShortsApp({Key? key}) : super(key: key);
+class SkimTubeApp extends StatelessWidget {
+  const SkimTubeApp({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {

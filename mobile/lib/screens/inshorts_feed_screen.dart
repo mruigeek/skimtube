@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import '../providers/app_provider.dart';
 import '../widgets/inshorts_card.dart';
 import '../widgets/welcome_card.dart';
-import 'settings_screen.dart';
 
 class InShortsFeedScreen extends StatefulWidget {
   final bool isBookmarksPage;
@@ -45,7 +44,7 @@ class _InShortsFeedScreenState extends State<InShortsFeedScreen> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: const Color(0xFFFF9500).withOpacity(0.1),
+              color: const Color(0xFFFF9500).withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
             child: const Icon(
@@ -104,7 +103,7 @@ class _InShortsFeedScreenState extends State<InShortsFeedScreen> {
 
     return PopScope(
       canPop: true,
-      onPopInvoked: (didPop) {
+      onPopInvokedWithResult: (didPop, result) {
         if (didPop && widget.isBookmarksPage) {
           provider.setBookmarkedOnly(false);
         }
@@ -158,8 +157,8 @@ class _InShortsFeedScreenState extends State<InShortsFeedScreen> {
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      Colors.black.withOpacity(0.75),
-                      Colors.black.withOpacity(0.3),
+                      Colors.black.withValues(alpha: 0.75),
+                      Colors.black.withValues(alpha: 0.3),
                       Colors.transparent,
                     ],
                   ),

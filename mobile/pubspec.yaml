@@ -1,5 +1,5 @@
-name: youtube_inshorts
-description: "A top-notch, production-grade InShorts-style YouTube summary app for iOS & Android."
+name: skimtube
+description: "A top-notch, production-grade SkimTube summary app for iOS & Android."
 publish_to: 'none'
 version: 1.0.0+1
 

@@ -6,6 +6,7 @@ class NotificationService {
   NotificationService._internal();
 
   bool _initialized = false;
+  bool get isInitialized => _initialized;
 
   Future<void> init() async {
     _initialized = true;

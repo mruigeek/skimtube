@@ -83,7 +83,7 @@ class _WelcomeCardState extends State<WelcomeCard> {
                               shape: BoxShape.circle,
                               boxShadow: [
                                 BoxShadow(
-                                  color: const Color(0xFF2563EB).withOpacity(0.4),
+                                  color: const Color(0xFF2563EB).withValues(alpha: 0.4),
                                   blurRadius: 20,
                                   spreadRadius: 2,
                                 ),

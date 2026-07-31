@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:intl/intl.dart';
 import '../models/video.dart';
 import '../providers/app_provider.dart';
 
@@ -56,21 +57,10 @@ class _FullSummaryModalState extends State<FullSummaryModal> {
     }
   }
 
-  String _getRelativeTime(String publishedAtStr) {
+  String _formatPublishedAt(String publishedAtStr) {
     try {
       final DateTime dt = DateTime.parse(publishedAtStr);
-      final DateTime now = DateTime.now();
-      final Duration diff = now.difference(dt);
-      
-      if (diff.inDays >= 1) {
-        return '${diff.inDays}d ago';
-      } else if (diff.inHours >= 1) {
-        return '${diff.inHours}h ago';
-      } else if (diff.inMinutes >= 1) {
-        return '${diff.inMinutes}m ago';
-      } else {
-        return 'just now';
-      }
+      return DateFormat('dd MMM yyyy hh:mm a').format(dt);
     } catch (_) {
       return '';
     }
@@ -116,8 +106,8 @@ class _FullSummaryModalState extends State<FullSummaryModal> {
                     children: [
                       Text(
                         video.publishedAt.isNotEmpty
-                            ? '${video.channelName} • ${_getRelativeTime(video.publishedAt)}'
-                            : video.channelName,
+                            ? '${video.channelName.toUpperCase()} • ${_formatPublishedAt(video.publishedAt)}'
+                            : video.channelName.toUpperCase(),
                         style: const TextStyle(
                           color: Color(0xFFFF3B30),
                           fontSize: 13,

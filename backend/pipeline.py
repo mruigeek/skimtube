@@ -402,7 +402,7 @@ Source Text:
         clean_result = " ".join(clean_result.splitlines())
         return clean_result
     
-    return f"{video_title}. High-density summary generated from channel {channel_name}."
+    return f"[Ollama Offline] Could not generate summary. Please check if your local Ollama instance is running (http://localhost:11434) and has the model pulled."
 
 
 def generate_full_digest(transcript: str, video_title: str, channel_name: str) -> str | None:
@@ -582,6 +582,18 @@ def process_all_channels(db: Session = None):
         close_db_on_exit = True
 
     try:
+        # Check if LLM is accessible (Ollama or Gemini)
+        if not os.getenv("GEMINI_API_KEY"):
+            try:
+                base_ollama_url = OLLAMA_API_URL.replace('/api/generate', '')
+                r = requests.get(f"{base_ollama_url}/api/tags", timeout=3)
+                if r.status_code != 200:
+                    print("[-] Pipeline error: Ollama is running but returned an invalid status code. Make sure model is pulled.")
+                    return {"processed": 0, "status": "ollama_offline", "message": "Ollama returned invalid status code."}
+            except Exception as e:
+                print(f"[-] Pipeline error: Ollama server is offline or not running at {OLLAMA_API_URL}. Start Ollama locally. Details: {e}")
+                return {"processed": 0, "status": "ollama_offline", "message": "Ollama server is offline."}
+
         # Purge files & DB entries older than 24h to keep feed strictly last 24h
         cleanup_old_summaries(db, max_hours=24)
 

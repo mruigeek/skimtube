@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/app_provider.dart';
@@ -102,15 +101,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  String _formatTime(int hour, int minute) {
-    final period = hour >= 12 ? 'PM' : 'AM';
-    final formattedHour = hour == 0
-        ? 12
-        : hour > 12
-            ? hour - 12
-            : hour;
-    final formattedMinute = minute.toString().padLeft(2, '0');
-    return '$formattedHour:$formattedMinute $period';
+  void _showPrivacyPolicyDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1E2634),
+        title: const Text('Privacy Policy & Transparency', style: TextStyle(color: Colors.white)),
+        content: const SingleChildScrollView(
+          child: Text(
+            'SkimTube respects user privacy:\n\n'
+            '• No Personal Data Collection: SkimTube does not harvest personal user details, tracking tokens, or contacts.\n'
+            '• Local Device Storage: Monitored channels, server configurations, and bookmarks are stored exclusively on your device via SharedPreferences.\n'
+            '• Backend Communication: SkimTube connects only to your configured local/remote API backend for retrieving video digests.\n'
+            '• Third-Party Services: Public YouTube RSS feeds and transcripts are fetched securely via backend service without third-party ad profiling.\n',
+            style: TextStyle(color: Colors.white70, fontSize: 13, height: 1.4),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Close', style: TextStyle(color: Color(0xFF60A5FA))),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -128,7 +142,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         padding: const EdgeInsets.all(20),
         children: [
 
-          // ── Section 4: Bookmarks Shortcut ───────────────────────────────
+          // ── Section 4: Bookmarks Shortcut & Privacy Policy ────────────────
           Material(
             color: const Color(0xFF181F2B),
             clipBehavior: Clip.antiAlias,
@@ -136,20 +150,33 @@ class _SettingsScreenState extends State<SettingsScreen> {
               borderRadius: BorderRadius.circular(16),
               side: const BorderSide(color: Colors.white12),
             ),
-            child: ListTile(
-              contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 4),
-              leading: const Icon(Icons.bookmark_rounded, color: Color(0xFFFF9500), size: 24),
-              title: const Text('Saved Bookmarks', style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold)),
-              subtitle: const Text('Quick access to your bookmarked digests', style: TextStyle(color: Colors.white54, fontSize: 11.5)),
-              trailing: const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white24, size: 14),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const InShortsFeedScreen(isBookmarksPage: true),
-                  ),
-                );
-              },
+            child: Column(
+              children: [
+                ListTile(
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 4),
+                  leading: const Icon(Icons.bookmark_rounded, color: Color(0xFFFF9500), size: 24),
+                  title: const Text('Saved Bookmarks', style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold)),
+                  subtitle: const Text('Quick access to your bookmarked digests', style: TextStyle(color: Colors.white54, fontSize: 11.5)),
+                  trailing: const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white24, size: 14),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const InShortsFeedScreen(isBookmarksPage: true),
+                      ),
+                    );
+                  },
+                ),
+                const Divider(height: 1, color: Colors.white10),
+                ListTile(
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 4),
+                  leading: const Icon(Icons.privacy_tip_rounded, color: Color(0xFF10B981), size: 24),
+                  title: const Text('Privacy Policy & Transparency', style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold)),
+                  subtitle: const Text('View data safety & storage details', style: TextStyle(color: Colors.white54, fontSize: 11.5)),
+                  trailing: const Icon(Icons.info_outline_rounded, color: Colors.white24, size: 18),
+                  onTap: () => _showPrivacyPolicyDialog(context),
+                ),
+              ],
             ),
           ),
 

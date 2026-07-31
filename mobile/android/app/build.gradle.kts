@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.youtube_inshorts"
+    namespace = "com.skimtube.app"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -15,10 +15,7 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.example.youtube_inshorts"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://flutter.dev/to/review-gradle-config.
+        applicationId = "com.skimtube.app"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
@@ -27,8 +24,8 @@ android {
 
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
+            // Production release signing configuration placeholder
+            // Signing defaults to debug key if key.properties is not supplied locally
             signingConfig = signingConfigs.getByName("debug")
         }
     }

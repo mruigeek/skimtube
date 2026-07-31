@@ -29,25 +29,6 @@ class InShortsCard extends StatelessWidget {
     Share.share(text);
   }
 
-  String _getRelativeTime(String publishedAtStr) {
-    try {
-      final DateTime dt = DateTime.parse(publishedAtStr);
-      final DateTime now = DateTime.now();
-      final Duration diff = now.difference(dt);
-      
-      if (diff.inDays >= 1) {
-        return '${diff.inDays}d ago';
-      } else if (diff.inHours >= 1) {
-        return '${diff.inHours}h ago';
-      } else if (diff.inMinutes >= 1) {
-        return '${diff.inMinutes}m ago';
-      } else {
-        return 'just now';
-      }
-    } catch (_) {
-      return '';
-    }
-  }
 
   String _formatPublishedAt(String publishedAtStr) {
     try {

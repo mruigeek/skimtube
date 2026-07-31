@@ -1,4 +1,4 @@
-package com.example.youtube_inshorts
+package com.skimtube.app
 
 import io.flutter.embedding.android.FlutterActivity
 
