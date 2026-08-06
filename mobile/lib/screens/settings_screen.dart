@@ -112,7 +112,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             'SkimTube respects user privacy:\n\n'
             '• No Personal Data Collection: SkimTube does not harvest personal user details, tracking tokens, or contacts.\n'
             '• Local Device Storage: Monitored channels, server configurations, and bookmarks are stored exclusively on your device via SharedPreferences.\n'
-            '• Backend Communication: SkimTube connects only to your configured local/remote API backend for retrieving video digests.\n'
+            '• Backend Communication: SkimTube connects securely to the SkimTube API backend service for retrieving video digests and RSS sync updates.\n'
             '• Third-Party Services: Public YouTube RSS feeds and transcripts are fetched securely via backend service without third-party ad profiling.\n',
             style: TextStyle(color: Colors.white70, fontSize: 13, height: 1.4),
           ),

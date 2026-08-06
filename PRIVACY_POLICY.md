@@ -23,9 +23,9 @@ This data remains strictly on your device and is never uploaded to any external 
 
 ## 2. Network Communications & Transcripts
 
-SkimTube communicates exclusively with:
-1. **Configured API Backend**: To request and render video digests and RSS sync updates.
-2. **Public Video Metadata & Transcripts**: Fetched directly or via backend service for natural language processing and summary generation.
+SkimTube communicates securely with:
+1. **SkimTube API Backend Service**: To request and render video digests and RSS sync updates.
+2. **Public Video Metadata & Transcripts**: Processed via backend service for natural language summary generation.
 
 No user usage telemetry, analytics trackers, or advertising IDs (GAID) are integrated into SkimTube.
 
