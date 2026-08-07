@@ -121,6 +121,28 @@ class ApiService {
   }
 
   Future<List<ChannelModel>> getChannels() async {
+    try {
+      final baseUrl = await getServerUrl();
+      final uri = Uri.parse('$baseUrl/api/channels');
+      final response = await http.get(uri).timeout(const Duration(seconds: 5));
+      if (response.statusCode == 200) {
+        final List<dynamic> list = jsonDecode(response.body);
+        final serverChannels = list.map((json) => ChannelModel.fromJson(json)).toList();
+        
+        final local = await getLocalChannels();
+        bool modified = false;
+        for (final sc in serverChannels) {
+          if (!local.any((lc) => lc.channelId == sc.channelId)) {
+            local.add(sc);
+            modified = true;
+          }
+        }
+        if (modified) {
+          await saveLocalChannels(local);
+        }
+        return local;
+      }
+    } catch (_) {}
     return getLocalChannels();
   }
 

@@ -138,137 +138,142 @@ class _SettingsScreenState extends State<SettingsScreen> {
         title: const Text('Settings', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         elevation: 0,
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(20),
-        children: [
-
-          // ── Section 4: Bookmarks Shortcut & Privacy Policy ────────────────
-          Material(
-            color: const Color(0xFF181F2B),
-            clipBehavior: Clip.antiAlias,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-              side: const BorderSide(color: Colors.white12),
-            ),
-            child: Column(
-              children: [
-                ListTile(
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 4),
-                  leading: const Icon(Icons.bookmark_rounded, color: Color(0xFFFF9500), size: 24),
-                  title: const Text('Saved Bookmarks', style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold)),
-                  subtitle: const Text('Quick access to your bookmarked digests', style: TextStyle(color: Colors.white54, fontSize: 11.5)),
-                  trailing: const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white24, size: 14),
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const InShortsFeedScreen(isBookmarksPage: true),
-                      ),
-                    );
-                  },
-                ),
-                const Divider(height: 1, color: Colors.white10),
-                ListTile(
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 4),
-                  leading: const Icon(Icons.privacy_tip_rounded, color: Color(0xFF10B981), size: 24),
-                  title: const Text('Privacy Policy & Transparency', style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold)),
-                  subtitle: const Text('View data safety & storage details', style: TextStyle(color: Colors.white54, fontSize: 11.5)),
-                  trailing: const Icon(Icons.info_outline_rounded, color: Colors.white24, size: 18),
-                  onTap: () => _showPrivacyPolicyDialog(context),
-                ),
-              ],
-            ),
-          ),
-
-
-
-          // ── Section 2: Channel Management ────────────────────────────────
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 520),
+          child: ListView(
+            padding: const EdgeInsets.all(20),
             children: [
-              const Text(
-                'Monitored Channels',
-                style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+
+              // ── Section 4: Bookmarks Shortcut & Privacy Policy ────────────────
+              Material(
+                color: const Color(0xFF181F2B),
+                clipBehavior: Clip.antiAlias,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  side: const BorderSide(color: Colors.white12),
+                ),
+                child: Column(
+                  children: [
+                    ListTile(
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 4),
+                      leading: const Icon(Icons.bookmark_rounded, color: Color(0xFFFF9500), size: 24),
+                      title: const Text('Saved Bookmarks', style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold)),
+                      subtitle: const Text('Quick access to your bookmarked digests', style: TextStyle(color: Colors.white54, fontSize: 11.5)),
+                      trailing: const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white24, size: 14),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const InShortsFeedScreen(isBookmarksPage: true),
+                          ),
+                        );
+                      },
+                    ),
+                    const Divider(height: 1, color: Colors.white10),
+                    ListTile(
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 4),
+                      leading: const Icon(Icons.privacy_tip_rounded, color: Color(0xFF10B981), size: 24),
+                      title: const Text('Privacy Policy & Transparency', style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold)),
+                      subtitle: const Text('View data safety & storage details', style: TextStyle(color: Colors.white54, fontSize: 11.5)),
+                      trailing: const Icon(Icons.info_outline_rounded, color: Colors.white24, size: 18),
+                      onTap: () => _showPrivacyPolicyDialog(context),
+                    ),
+                  ],
+                ),
               ),
-              IconButton(
-                onPressed: () => _showAddChannelDialog(context),
-                icon: const Icon(Icons.add_circle_rounded, color: Color(0xFF60A5FA), size: 28),
+
+
+
+              // ── Section 2: Channel Management ────────────────────────────────
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Monitored Channels',
+                    style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  IconButton(
+                    onPressed: () => _showAddChannelDialog(context),
+                    icon: const Icon(Icons.add_circle_rounded, color: Color(0xFF60A5FA), size: 28),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+
+              if (provider.channels.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 20),
+                  child: Text(
+                    'No channels added yet. Tap "+" to add a YouTube channel.',
+                    style: TextStyle(color: Colors.white54, fontSize: 14),
+                  ),
+                )
+              else
+                ...provider.channels.map((channel) => Container(
+                      margin: const EdgeInsets.only(bottom: 10),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF181F2B),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.white10),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.play_circle_fill, color: Color(0xFFFF0000), size: 24),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  channel.name,
+                                  style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold),
+                                ),
+                                Text(
+                                  channel.channelId,
+                                  style: const TextStyle(color: Colors.white54, fontSize: 12),
+                                ),
+                              ],
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent),
+                            onPressed: () => provider.deleteChannel(channel.channelId),
+                          ),
+                        ],
+                      ),
+                    )),
+
+              const SizedBox(height: 24),
+
+              // ── Section 3: Manual Sync Trigger ───────────────────────────────
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: (provider.isSyncing || provider.channels.isEmpty) ? null : () => provider.triggerSync(),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF10B981), // Emerald Green
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  ),
+                  icon: provider.isSyncing
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                        )
+                      : const Icon(Icons.sync_rounded),
+                  label: Text(
+                    provider.isSyncing ? 'Syncing Feeds...' : 'Sync Feeds & Summarize Now',
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
-
-          if (provider.channels.isEmpty)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 20),
-              child: Text(
-                'No channels added yet. Tap "+" to add a YouTube channel.',
-                style: TextStyle(color: Colors.white54, fontSize: 14),
-              ),
-            )
-          else
-            ...provider.channels.map((channel) => Container(
-                  margin: const EdgeInsets.only(bottom: 10),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF181F2B),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.white10),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.play_circle_fill, color: Color(0xFFFF0000), size: 24),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              channel.name,
-                              style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold),
-                            ),
-                            Text(
-                              channel.channelId,
-                              style: const TextStyle(color: Colors.white54, fontSize: 12),
-                            ),
-                          ],
-                        ),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent),
-                        onPressed: () => provider.deleteChannel(channel.channelId),
-                      ),
-                    ],
-                  ),
-                )),
-
-          const SizedBox(height: 24),
-
-          // ── Section 3: Manual Sync Trigger ───────────────────────────────
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: (provider.isSyncing || provider.channels.isEmpty) ? null : () => provider.triggerSync(),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF10B981), // Emerald Green
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              ),
-              icon: provider.isSyncing
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                    )
-                  : const Icon(Icons.sync_rounded),
-              label: Text(
-                provider.isSyncing ? 'Syncing Feeds...' : 'Sync Feeds & Summarize Now',
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }

@@ -284,7 +284,7 @@ def add_channel(channel: ChannelCreate, db: Session = Depends(get_db)):
 
     existing = db.query(Channel).filter(Channel.channel_id == resolved_id).first()
     if existing:
-        raise HTTPException(status_code=400, detail="Channel already exists")
+        return existing
 
     new_ch = Channel(channel_id=resolved_id, name=channel.name.strip())
     db.add(new_ch)

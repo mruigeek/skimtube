@@ -75,106 +75,111 @@ class _FullSummaryModalState extends State<FullSummaryModal> {
             ? video.summaryLocal!
             : video.shortSummary;
 
-    return Container(
-      height: MediaQuery.of(context).size.height * 0.88,
-      decoration: const BoxDecoration(
-        color: Color(0xFF141923),
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      child: Column(
-        children: [
-          // Drag Handle
-          const SizedBox(height: 12),
-          Container(
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: Colors.white30,
-              borderRadius: BorderRadius.circular(2),
-            ),
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 520),
+        child: Container(
+          height: MediaQuery.of(context).size.height * 0.88,
+          decoration: const BoxDecoration(
+            color: Color(0xFF141923),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
           ),
-          const SizedBox(height: 12),
-
-          // Modal Header
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        video.publishedAt.isNotEmpty
-                            ? '${video.channelName.toUpperCase()} • ${_formatPublishedAt(video.publishedAt)}'
-                            : video.channelName.toUpperCase(),
-                        style: const TextStyle(
-                          color: Color(0xFFFF3B30),
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        video.title,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 17,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
+          child: Column(
+            children: [
+              // Drag Handle
+              const SizedBox(height: 12),
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.white30,
+                  borderRadius: BorderRadius.circular(2),
                 ),
-                IconButton(
-                  onPressed: () => Navigator.pop(context),
-                  icon: const Icon(Icons.close_rounded, color: Colors.white70),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
+              ),
+              const SizedBox(height: 12),
 
-          // Single Full Summary Markdown Content View
-          Expanded(
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator(color: Color(0xFF2563EB)))
-                : _buildMarkdownView(summaryContent),
-          ),
-
-          // Bottom Action Bar: Open on YouTube
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: const BoxDecoration(
-              color: Color(0xFF1E2634),
-              borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-            ),
-            child: SafeArea(
-              top: false,
-              child: SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: _openYouTubeUrl,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFFF0000),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+              // Modal Header
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            video.publishedAt.isNotEmpty
+                                ? '${video.channelName.toUpperCase()} • ${_formatPublishedAt(video.publishedAt)}'
+                                : video.channelName.toUpperCase(),
+                            style: const TextStyle(
+                              color: Color(0xFFFF3B30),
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            video.title,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 17,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                  icon: const Icon(Icons.play_arrow_rounded, size: 22),
-                  label: const Text(
-                    'Watch Video on YouTube',
-                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                    IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      icon: const Icon(Icons.close_rounded, color: Colors.white70),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              // Single Full Summary Markdown Content View
+              Expanded(
+                child: _isLoading
+                    ? const Center(child: CircularProgressIndicator(color: Color(0xFF2563EB)))
+                    : _buildMarkdownView(summaryContent),
+              ),
+
+              // Bottom Action Bar: Open on YouTube
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: const BoxDecoration(
+                  color: Color(0xFF1E2634),
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+                ),
+                child: SafeArea(
+                  top: false,
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: _openYouTubeUrl,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFFF0000),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      icon: const Icon(Icons.play_arrow_rounded, size: 22),
+                      label: const Text(
+                        'Watch Video on YouTube',
+                        style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                      ),
+                    ),
                   ),
                 ),
               ),
-            ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
