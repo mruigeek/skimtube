@@ -135,7 +135,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
       backgroundColor: const Color(0xFF0F141C),
       appBar: AppBar(
         backgroundColor: const Color(0xFF141923),
-        title: const Text('Settings', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        title: Row(
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(6),
+              child: Image.asset(
+                'assets/logo.png',
+                width: 26,
+                height: 26,
+                fit: BoxFit.cover,
+              ),
+            ),
+            const SizedBox(width: 10),
+            const Text('Settings', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          ],
+        ),
         elevation: 0,
       ),
       body: Center(

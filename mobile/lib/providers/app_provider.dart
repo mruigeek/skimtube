@@ -110,8 +110,7 @@ class AppProvider with ChangeNotifier {
         search: _searchQuery,
       );
 
-      final configuredChannelIds = _channels.map((c) => c.channelId).toSet();
-      final filteredVideos = newVideos.where((v) => configuredChannelIds.contains(v.channelId)).toList();
+      final filteredVideos = newVideos;
 
       if (_videos.isNotEmpty && filteredVideos.length > _videos.length) {
         final diff = filteredVideos.length - _videos.length;

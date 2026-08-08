@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/video.dart';
@@ -14,10 +13,7 @@ class ApiService {
     if (envUrl.isNotEmpty) {
       return envUrl;
     }
-    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
-      return 'http://192.168.1.26:8000';
-    }
-    return 'http://localhost:8000';
+    return 'https://skimtube.onrender.com';
   }
 
 
@@ -60,15 +56,31 @@ class ApiService {
     if (bookmarkedOnly) queryParams['bookmarked_only'] = 'true';
     if (search != null && search.isNotEmpty) queryParams['search'] = search;
 
-    final uri = Uri.parse('$baseUrl/api/videos').replace(queryParameters: queryParams);
-    final response = await http.get(uri).timeout(const Duration(seconds: 10));
+    try {
+      final uri = Uri.parse('$baseUrl/api/videos').replace(queryParameters: queryParams);
+      final response = await http.get(uri).timeout(const Duration(seconds: 8));
+      if (response.statusCode == 200) {
+        final List<dynamic> list = jsonDecode(response.body);
+        final videos = list.map((json) => VideoModel.fromJson(json)).toList();
+        if (videos.isNotEmpty) {
+          return videos;
+        }
+      }
+    } catch (_) {}
 
-    if (response.statusCode == 200) {
-      final List<dynamic> list = jsonDecode(response.body);
-      return list.map((json) => VideoModel.fromJson(json)).toList();
-    } else {
-      throw Exception('Failed to fetch videos: ${response.statusCode}');
+    // Smart Fallback: If remote host (e.g. cloud) is empty or unreachable, try local backend server
+    if (!baseUrl.contains('127.0.0.1') && !baseUrl.contains('localhost')) {
+      try {
+        final localUri = Uri.parse('http://127.0.0.1:8000/api/videos').replace(queryParameters: queryParams);
+        final response = await http.get(localUri).timeout(const Duration(seconds: 4));
+        if (response.statusCode == 200) {
+          final List<dynamic> list = jsonDecode(response.body);
+          return list.map((json) => VideoModel.fromJson(json)).toList();
+        }
+      } catch (_) {}
     }
+
+    return [];
   }
 
   Future<VideoModel> getVideoDetail(String videoId) async {
